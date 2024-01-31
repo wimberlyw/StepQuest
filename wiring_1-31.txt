@@ -1,0 +1,80 @@
+
+ESP32-S3-DevkitC	Screen
+3v3			VCC
+GND			GND
+Mosi(13)		MOSI
+MISO(11)		MISO
+CS  (10)		CS
+DC(41)		 	DC
+CLK (12)		SCLK
+
+RST (42)		RST
+BL(14)			BL
+5			TP_SDA
+6			TP_SCL
+9			TP_RST
+3			TP_IRQ
+
+
+ESP32-S3		MPU6050
+3v			VCC
+GND			GND
+35			SDA
+36			SCL
+
+47 vib
+
+4 button 1
+7 
+8
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
