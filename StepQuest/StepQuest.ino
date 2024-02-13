@@ -4,6 +4,7 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 #include "Char1.h"
+#include "steps.h"
 
 #define I2C_SDA 35
 #define I2C_SCL 36
@@ -45,6 +46,17 @@ int buttonState2=0;
 
 unsigned long previousButtonMillis;
 
+// Steps
+unsigned int steps = 0;
+hw_timer_t *StepTimer = NULL;
+int stepFlag = 0;
+sensors_event_t a, g, temp;
+
+void IRAM_ATTR StepTimer_ISR()
+{
+  stepFlag = 1;
+}
+
 void setup() {
   bool status;
   pinMode(button1, INPUT_PULLUP); // config GPIO21 as input pin and enable the internal pull-up resistor
@@ -64,6 +76,57 @@ void setup() {
     }
   }
   Serial.println("MPU6050 Found!");
+
+  // mpu6050 setup
+  
+  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
+  Serial.print("Accelerometer range set to: ");
+  switch (mpu.getAccelerometerRange()) {
+  case MPU6050_RANGE_2_G:
+    Serial.println("+-2G");
+    break;
+  case MPU6050_RANGE_4_G:
+    Serial.println("+-4G");
+    break;
+  case MPU6050_RANGE_8_G:
+    Serial.println("+-8G");
+    break;
+  case MPU6050_RANGE_16_G:
+    Serial.println("+-16G");
+    break;
+  }
+
+  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+  Serial.print("Filter bandwidth set to: ");
+  switch (mpu.getFilterBandwidth()) {
+  case MPU6050_BAND_260_HZ:
+    Serial.println("260 Hz");
+    break;
+  case MPU6050_BAND_184_HZ:
+    Serial.println("184 Hz");
+    break;
+  case MPU6050_BAND_94_HZ:
+    Serial.println("94 Hz");
+    break;
+  case MPU6050_BAND_44_HZ:
+    Serial.println("44 Hz");
+    break;
+  case MPU6050_BAND_21_HZ:
+    Serial.println("21 Hz");
+    break;
+  case MPU6050_BAND_10_HZ:
+    Serial.println("10 Hz");
+    break;
+  case MPU6050_BAND_5_HZ:
+    Serial.println("5 Hz");
+    break;
+  }
+
+  // Timer setup for step algorithm
+  StepTimer = timerBegin(0,80,true);
+  timerAttachInterrupt(StepTimer, &StepTimer_ISR, true);
+  timerAlarmWrite(StepTimer, 20000, true);
+  timerAlarmEnable(StepTimer);
   
   // Screen Setup
 
@@ -105,10 +168,18 @@ void loop() {
   }
   */
 
+  // if raised check for steps
+  // ideally should run every 20ms but is likely taking longer rn
+  if (stepFlag == 1)
+  {
+    mpu.getEvent(&a, &g, &temp);
+    steps = stepAlg(a);
+    stepFlag = 0;
+  }
+
    // Take inputs
    readScreenGesture();
    readButtons();
-    
    
   // limits for the screen variable
   if(screen>3)
@@ -159,7 +230,8 @@ void loop() {
     background.fillScreen(TFT_BLACK);
     background.setCursor(65, 60, 4);
     background.setTextColor(TFT_RED, TFT_BLACK);
-    background.println("SCREEN 1");
+    background.print("Steps: ");
+    background.print(steps);
     
     break;
   } // End Case 1
