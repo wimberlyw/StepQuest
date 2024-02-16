@@ -2,6 +2,7 @@
 #include <CST816S.h>
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
+#include "ESP32TimerInterrupt.h"
 #include <Wire.h>
 #include "Char1.h"
 #include "steps.h"
@@ -13,6 +14,15 @@
 #define ANIMINTERVAL 200
 
 Adafruit_MPU6050 mpu;
+
+// Fixed by switching what task is running on which core, now step alg and interrupt run on core 0 instead of the graphics
+//E (13501) task_wdt: Task watchdog got triggered. The following tasks did not reset the watchdog in time:
+//E (13501) task_wdt:  - IDLE (CPU 0)
+//E (13501) task_wdt: Tasks currently running:
+//E (13501) task_wdt: CPU 0: loop1
+//E (13501) task_wdt: CPU 1: loopTask
+//E (13501) task_wdt: Aborting.
+
 
 TwoWire I2CMPU = TwoWire(1);
 
@@ -48,13 +58,26 @@ unsigned long previousButtonMillis;
 
 // Steps
 unsigned int steps = 0;
-hw_timer_t *StepTimer = NULL;
-int stepFlag = 0;
+ESP32Timer StepTimer(0);
+//hw_timer_t *StepTimer = NULL;
+volatile int stepFlag = 0;
 sensors_event_t a, g, temp;
 
-void IRAM_ATTR StepTimer_ISR()
+bool IRAM_ATTR StepTimerHandler(void * timerNo)
 {
   stepFlag = 1;
+
+  return true;
+}
+
+void attachStepTimerInterruptTask(void *pvParameters)
+{
+  if (StepTimer.attachInterruptInterval(20000, StepTimerHandler))
+  {
+    Serial.println("StepTimer started");
+  }
+
+  vTaskDelete(NULL);
 }
 
 void setup() {
@@ -122,11 +145,11 @@ void setup() {
     break;
   }
 
-  // Timer setup for step algorithm
+  /* Timer setup for step algorithm
   StepTimer = timerBegin(0,80,true);
   timerAttachInterrupt(StepTimer, &StepTimer_ISR, true);
   timerAlarmWrite(StepTimer, 20000, true);
-  timerAlarmEnable(StepTimer);
+  timerAlarmEnable(StepTimer);*/
   
   // Screen Setup
 
@@ -148,116 +171,132 @@ void setup() {
   Serial.println(touch.data.versionInfo[2]);
     
   background.setTextColor(TFT_WHITE, TFT_SKYBLUE);
+
+  // Multithreading setup
+  xTaskCreatePinnedToCore(attachStepTimerInterruptTask, "attachStepTimerInterruptTask", 4096, NULL, 1, NULL, 0);
+  xTaskCreatePinnedToCore(loop2, "loop2", 4096, NULL, 1, NULL, 0);
+  xTaskCreatePinnedToCore(loop1, "loop1", 4096, NULL, 1, NULL, 1);
 }
 
 
-void loop() {
-   
-  /*
-   * // Touch Screen data
-  if (touch.available()) {
-    Serial.print(touch.gesture());
-    Serial.print("\t");
-    Serial.print(touch.data.points);
-    Serial.print("\t");
-    Serial.print(touch.data.event);
-    Serial.print("\t");
-    Serial.print(touch.data.x);
-    Serial.print("\t");
-    Serial.println(touch.data.y);
-  }
-  */
+void loop1(void *pvParameters) {
+   while(1)
+   {
+    /*
+     * // Touch Screen data
+    if (touch.available()) {
+      Serial.print(touch.gesture());
+      Serial.print("\t");
+      Serial.print(touch.data.points);
+      Serial.print("\t");
+      Serial.print(touch.data.event);
+      Serial.print("\t");
+      Serial.print(touch.data.x);
+      Serial.print("\t");
+      Serial.println(touch.data.y);
+    }
+    */
+  
+     // Take inputs
+     readScreenGesture();
+     readButtons();
+     
+    // limits for the screen variable
+    if(screen>3)
+    {
+      screen = 0;   
+    }
+    if(screen<0){
+      screen = 3;
+    } 
+      
+     background.setCursor(65, 40, 4);
+    // We can now plot text on screen using the "print" class
+    // background.println(gest);
 
-  // if raised check for steps
-  // ideally should run every 20ms but is likely taking longer rn
-  if (stepFlag == 1)
-  {
-    mpu.getEvent(&a, &g, &temp);
-    steps = stepAlg(a);
-    stepFlag = 0;
-  }
-
-   // Take inputs
-   readScreenGesture();
-   readButtons();
-   
-  // limits for the screen variable
-  if(screen>3)
-  {
-    screen = 0;   
-  }
-  if(screen<0){
-    screen = 3;
-  } 
+    background.setTextColor(TFT_GREEN, TFT_BLACK);
+    background.fillSprite(TFT_SKYBLUE);
+//    Serial.println(screen);
+  
+    //// *********************** Screen Handling **********************************//
+    // Show the appropriate screen based on the button
+    switch(screen){
+      case 0:
+    {    
+      //rial.println("in switch");
     
-   background.setCursor(65, 40, 4);
-  // We can now plot text on screen using the "print" class
-  // background.println(gest);
-
-  background.setTextColor(TFT_GREEN, TFT_BLACK);
-  background.fillSprite(TFT_SKYBLUE);
-  Serial.println(screen);
-
-  //// *********************** Screen Handling **********************************//
-  // Show the appropriate screen based on the button
-  switch(screen){
-    case 0:
-  {    
-    Serial.println("in switch");
-  
-  // Set the font colour to be white with a black background
-  background.setCursor(65, 60, 4);
-  background.setTextColor(TFT_RED, TFT_BLACK);
-  
-  background.println("Screen 0: ");
-
-     // Animate
-     if (millis() - prevAnim >= ANIMINTERVAL){  //every 300ms
-      //re-initialize the timing
-      prevAnim = millis();
-     charFrame++;
-     }
-     if(charFrame >2){ 
-      charFrame = 0;
-     }
-     Char.pushImage(0,0,96,96, C1[charFrame] ); // push to the created image at 0, 0, size of 32 x 32, the C1 array from char0.h, charFrame index.
-     Char.pushToSprite(&background, 70, 115, TFT_BLACK);
-  
-  } // End Case 0
-    break;
-  case 1:
-  {
-    background.fillScreen(TFT_BLACK);
+    // Set the font colour to be white with a black background
     background.setCursor(65, 60, 4);
     background.setTextColor(TFT_RED, TFT_BLACK);
-    background.print("Steps: ");
-    background.print(steps);
     
-    break;
-  } // End Case 1
-  case 2:
-  {
-    background.fillScreen(TFT_BLACK);
-    background.setCursor(65, 60, 4);
-    background.setTextColor(TFT_GREEN, TFT_BLACK);
-    background.println("SCREEN 2");
+    background.println("Screen 0: ");
+  
+       // Animate
+       if (millis() - prevAnim >= ANIMINTERVAL){  //every 300ms
+        //re-initialize the timing
+        prevAnim = millis();
+       charFrame++;
+       }
+       if(charFrame >2){ 
+        charFrame = 0;
+       }
+       Char.pushImage(0,0,96,96, C1[charFrame] ); // push to the created image at 0, 0, size of 32 x 32, the C1 array from char0.h, charFrame index.
+       Char.pushToSprite(&background, 70, 115, TFT_BLACK);
     
-    break;
-  } // End Case 2
-  case 3:
-  {
-    background.fillScreen(TFT_BLACK);
-    background.setCursor(65, 60, 4);
-    background.setTextColor(TFT_YELLOW, TFT_BLACK);
-    background.println("SCREEN 3");
-    
-    break;  
-  } // End Case 3
-} // end switch(screen)
-
-  // Push Background to screen
-  background.pushSprite(0,0);
+    } // End Case 0
+      break;
+    case 1:
+    {
+      background.fillScreen(TFT_BLACK);
+      background.setCursor(65, 60, 4);
+      background.setTextColor(TFT_RED, TFT_BLACK);
+      background.print("Steps: ");
+      background.print(steps);
+      
+      break;
+    } // End Case 1
+    case 2:
+    {
+      background.fillScreen(TFT_BLACK);
+      background.setCursor(65, 60, 4);
+      background.setTextColor(TFT_GREEN, TFT_BLACK);
+      background.println("SCREEN 2");
+      
+      break;
+    } // End Case 2
+    case 3:
+    {
+      background.fillScreen(TFT_BLACK);
+      background.setCursor(65, 60, 4);
+      background.setTextColor(TFT_YELLOW, TFT_BLACK);
+      background.println("SCREEN 3");
+      
+      break;  
+    } // End Case 3
+  } // end switch(screen)
+  
+    // Push Background to screen
+    background.pushSprite(0,0);
+   } 
 } // End loop()
+
+void loop2(void *pvParameters) // worst case could just use delay 20 ms in this loop instead of trying to use interrupt but that means nothing else can run on this core ever
+{
+  while(1)
+  {
+     // if raised check for steps
+    if (stepFlag == 1)
+    {
+      mpu.getEvent(&a, &g, &temp);
+      steps = stepAlg(a);
+      stepFlag = 0;
+    }
+  }
+}
+
+void loop(){}
+
+
   //// *********************** Functions **********************************//
 void readButtons(){
 //is it time to poll the buttons?
