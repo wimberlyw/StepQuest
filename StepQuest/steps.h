@@ -44,7 +44,6 @@ int state = 0;
 float last_peak = threshold;
 
 unsigned int stepAlg(sensors_event_t a) {
-
   float x = a.acceleration.x;
   float y = a.acceleration.y;
   float z = a.acceleration.z;
@@ -66,7 +65,7 @@ unsigned int stepAlg(sensors_event_t a) {
         if (state == 0) // in still state
         {
           potential_steps++;
-          if (potential_steps >= 10) // move to moving state
+          if (potential_steps >= moving_threshold) // move to moving state
           {
             state = 1;
             num_steps += potential_steps;
