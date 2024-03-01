@@ -17,6 +17,7 @@
 #define SCREENDEBOUNCE 500
 #define BUTTONDEBOUNCE 200
 #define ANIMINTERVAL 200
+#define SECONDINTERVAL 1000
 #define STEP_TIMER_INTERVAL_MS 20
 
 Adafruit_MPU6050 mpu;
@@ -50,6 +51,7 @@ unsigned int _hours = 1;
 unsigned int _minutes, _seconds = 0;
 unsigned long previousMillisScreen =0;
 unsigned long previousMillisButton = 0;
+unsigned long previousMillisTime = 0;
 unsigned long currAnim, prevAnim = 0; //animation Timers
 const int interval = 1000;
 const int animInterval = 200;
@@ -68,7 +70,7 @@ enum states {
   TOWN = 0,
   TRAVEL,
   DUNGEON,
-}
+};
 
 unsigned long previousButtonMillis;
 
