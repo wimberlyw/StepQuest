@@ -6,6 +6,9 @@
 #include <Wire.h>
 #include "Char1.h"
 #include "map.h"
+#include "castlecropped.h"
+#include "dungeoncroppped.h"
+#include "forestcropped.h"
 #include "steps.h"
 #include "travel.h"
 
@@ -34,6 +37,9 @@ TFT_eSprite Char = TFT_eSprite(&tft);
 TFT_eSprite background = TFT_eSprite(&tft);
 TFT_eSprite image = TFT_eSprite(&tft);
 TFT_eSprite popup = TFT_eSprite(&tft);
+TFT_eSprite Dungeon = TFT_eSprite(&tft);
+TFT_eSprite Forest = TFT_eSprite(&tft);
+TFT_eSprite Castle = TFT_eSprite(&tft);
 CST816S touch(5, 6, 9, 3);  // sda, scl, rst, irq
 
 uint16_t colors[12];
@@ -57,6 +63,12 @@ String gest = "";
 
 int buttonState1 =0;
 int buttonState2=0;
+
+enum states {
+  TOWN = 0,
+  TRAVEL,
+  DUNGEON,
+}
 
 unsigned long previousButtonMillis;
 
@@ -102,6 +114,27 @@ void loop1(void *pvParameters) {
       Serial.println(touch.data.y);
     }
     */
+    // TimeKeeping
+  if ((unsigned long)(millis() - previousMillisTime) >= SECONDINTERVAL) {
+  _seconds++;
+  //idletime--;
+  previousMillisTime = millis();
+  }
+   //time keeping
+  if (_seconds > 59)
+  {
+    _minutes++;
+    _seconds = 0;
+  }
+  if (_minutes > 59)
+  {
+    _hours++;
+    _minutes = 0;
+  }
+  if (_hours > 12)
+  {
+    _hours = 1;
+  }
   
      // Take inputs
      readScreenGesture();
@@ -124,6 +157,17 @@ void loop1(void *pvParameters) {
     {
       case 0:
       {   
+        background.fillScreen(TFT_BLACK);
+        background.setCursor(65, 60, 4);
+        background.setTextColor(TFT_RED, TFT_BLACK);
+        background.print("Steps: ");
+        background.print(steps);
+        break;
+        
+      } // End Case 0
+      case 1:
+      {
+
         // Set the font colour to be white with a black background
         background.setCursor(65, 60, 4);
         background.setTextColor(TFT_RED, TFT_BLACK);
@@ -143,15 +187,6 @@ void loop1(void *pvParameters) {
         }
         Char.pushImage(0,0,96,96, C1[charFrame] ); // push to the created image at 0, 0, size of 32 x 32, the C1 array from char0.h, charFrame index.
         Char.pushToSprite(&background, 70, 115, TFT_BLACK);
-        break;
-      } // End Case 0
-      case 1:
-      {
-        background.fillScreen(TFT_BLACK);
-        background.setCursor(65, 60, 4);
-        background.setTextColor(TFT_RED, TFT_BLACK);
-        background.print("Steps: ");
-        background.print(steps);
         
         break;
       } // End Case 1
