@@ -135,12 +135,12 @@ void loop1(void *pvParameters) {
      readButtons();
      
     // limits for the screen variable
-    if(screen>3)
+    if(screen>DUNGEONMENU)
     {
-      screen = 0;   
+      screen = HOMESCREEN;   
     }
-    if(screen<0){
-      screen = 3;
+    if(screen<HOMESCREEN){
+      screen = DUNGEONMENU;
     } 
 
     background.fillSprite(TFT_SKYBLUE);
@@ -166,7 +166,7 @@ void loop1(void *pvParameters) {
         background.setCursor(65, 60, 4);
         background.setTextColor(TFT_RED, TFT_BLACK);
         
-        background.println("Screen 0: ");
+        background.println("Status: ");
       
         // Animate
         if (millis() - prevAnim >= ANIMINTERVAL) //every 300ms
@@ -197,7 +197,7 @@ void loop1(void *pvParameters) {
         background.fillScreen(TFT_BLACK);
         background.setCursor(65, 60, 4);
         background.setTextColor(TFT_YELLOW, TFT_BLACK);
-        background.println("SCREEN 3");
+        background.println("SETTINGS");
         break;  
       } // End Case 3
             case TOWNMENU:
@@ -211,11 +211,11 @@ void loop1(void *pvParameters) {
             case DUNGEONMENU:
       {
         background.fillScreen(TFT_BLACK);
-        background.setCursor(65, 60, 4);
+        background.setCursor(65, 60, 2);
         background.setTextColor(TFT_GREEN, TFT_BLACK);
         background.println("DUNGEON MENU");
         break;  
-      } // End Case 3
+      } // End Case 5
     } // end switch(screen)
   
     // Push Background to screen
