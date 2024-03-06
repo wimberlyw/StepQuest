@@ -11,6 +11,9 @@
 #include "forestcropped.h"
 #include "steps.h"
 #include "travel.h"
+
+#include "quests.h"
+#include "towns.h"
 #include "timekeeping.h"
 
 #define I2C_SDA 35
@@ -22,12 +25,7 @@
 
 Adafruit_MPU6050 mpu;
 
-//E (13501) task_wdt: Task watchdog got triggered. The following tasks did not reset the watchdog in time:
-//E (13501) task_wdt:  - IDLE (CPU 0)
-//E (13501) task_wdt: Tasks currently running:
-//E (13501) task_wdt: CPU 0: loop1
-//E (13501) task_wdt: CPU 1: loopTask
-//E (13501) task_wdt: Aborting.
+/*TODO: Use .setTextSize(2) and reorganize things to make it a bit more legible*/
 
 
 TwoWire I2CMPU = TwoWire(1);
@@ -37,11 +35,13 @@ TFT_eSPI tft = TFT_eSPI();  // Create object "tft"
 TFT_eSprite Char = TFT_eSprite(&tft);
 TFT_eSprite background = TFT_eSprite(&tft);
 TFT_eSprite worldmap = TFT_eSprite(&tft);
+
 TFT_eSprite popup = TFT_eSprite(&tft);
 TFT_eSprite popupText = TFT_eSprite(&tft);
 TFT_eSprite Dungeon = TFT_eSprite(&tft);
 TFT_eSprite Forest = TFT_eSprite(&tft);
 TFT_eSprite Castle = TFT_eSprite(&tft);
+TFT_eSprite Town_menu = TFT_eSprite(&tft);
 CST816S touch(5, 6, 9, 3);  // sda, scl, rst, irq
 
 // Timers
@@ -78,8 +78,8 @@ enum screen {
   HOMESCREEN = 0,
   STATUSSCREEN,
   WORLDMAP,
-  SETTINGS,
   TOWNMENU,
+   SETTINGS,
   DUNGEONMENU
 };
 
@@ -95,10 +95,18 @@ boolean travelling = false;
 volatile int travelSteps = 0;
 volatile int tempSteps = 0;
 volatile int totalTravelSteps = 0;
+int player_location = 0; // start at town 1
 //volatile int fractionTravelStep = 0;
 //volatile int stepsToChangePos = 0;
 //int travelPath = 0; // which path (0-3)
 //int travelPoint = 0; // which point on that path (0-7)
+
+// Shop and Quest items
+Town t;
+boolean shopDisplayed = false;
+boolean questDisplayed = false;
+int quest_selected = 0;
+int player_level = 50;
 
 bool IRAM_ATTR StepTimerHandler(void * timerNo)
 {
@@ -134,11 +142,10 @@ void loop1(void *pvParameters) {
       Serial.print("\t");
       Serial.println(touch.data.y);
     }
-    */
     
     // TimeKeeping
-    timekeeping(timkeeperPtr);
-  
+    timekeeping(timkeeperPtr);  
+
      // Take inputs
      readScreenGesture();
      readButtons();
@@ -146,6 +153,15 @@ void loop1(void *pvParameters) {
      if (travelling && travelSteps == 0)
     {
       finishTravel();
+      // setup the location
+      if (player_location == 0 || player_location == 1 || player_location == 3)
+      {
+        t = setupTown(player_level,player_location); // player level is currently hardcoded because it doesn't exist yet!
+      }
+      else
+      {
+        //setupDungeon();
+      }
     }
 //    else if (travelling)
 //    {
@@ -165,12 +181,21 @@ void loop1(void *pvParameters) {
 //    }
      
     // limits for the screen variable
-    if(screen>DUNGEONMENU)
+    
+    if (travelling)
     {
-      screen = HOMESCREEN;   
+      if (screen > 2) screen = 0;
+      if (screen < 0) screen = 2;
     }
-    if(screen<HOMESCREEN){
-      screen = DUNGEONMENU;
+    else
+    {
+        if(screen>DUNGEONMENU)
+        {
+            screen = HOMESCREEN;   
+        }
+        if(screen<HOMESCREEN){
+            screen = DUNGEONMENU;
+        }
     } 
 
     background.fillSprite(TFT_SKYBLUE);
@@ -217,10 +242,129 @@ void loop1(void *pvParameters) {
       case WORLDMAP: // map screen
       {
         image.pushImage(0,0, 240, 240, map1);
-        image.pushToSprite(&background, 0, 0, TFT_BLACK);
+        image.pushToSprite(&background, 0, 0);
         
         break;
       } // End Case 2
+      case TOWNMENU:
+      {
+        if (player_location == 0 || player_location == 1 || player_location == 3) // we are in a town
+        {
+          image.pushImage(0,0, 240, 240, castlecropped);
+          if (shopDisplayed)
+          {
+            
+            
+          }
+          else if (questDisplayed)
+          {
+            image.fillRoundRect(40,20,160,20,1,TFT_BLUE);
+            image.setTextColor(TFT_WHITE);
+            //image.setTextSize(2);
+            image.setCursor(90,20);
+            image.print("Quest Board");
+            image.fillRoundRect(40,200,160,20,1,TFT_RED);
+            image.setCursor(110,210);
+            image.print("Exit");
+            image.setCursor(63,30);
+            image.print(t.quests_per_12hr);
+            image.print(" quests remaining.");
+  
+            switch(quest_selected)
+            {
+              case(0):
+              {
+                image.fillRoundRect(60,50,120,40,1,TFT_WHITE);
+                image.fillRoundRect(60,100,120,40,1,TFT_WHITE);
+                image.fillRoundRect(60,150,120,40,1,TFT_WHITE);
+                break;
+              }
+              case(1):
+              {
+                image.fillRoundRect(60,50,120,40,1,TFT_CYAN);
+                image.drawRoundRect(60,50,120,40,1,TFT_BLACK);
+                image.fillRoundRect(184,50,50,40,1,TFT_GREEN);
+                image.fillRoundRect(20,50,36,40,1,TFT_RED);
+                image.fillRoundRect(60,100,120,40,1,TFT_WHITE);
+                image.fillRoundRect(60,150,120,40,1,TFT_WHITE);
+                image.setCursor(22,65);
+                image.print("Trash");
+                image.setCursor(186,55);
+                image.setTextColor(TFT_BLACK);
+                image.print("Begin");
+                image.setCursor(186,80);
+                image.print(t.curQuests[0].progress);
+                image.print("/");
+                image.print(t.curQuests[0].requirement);
+                break;
+              }
+              case(2):
+              {
+                image.fillRoundRect(60,100,120,40,1,TFT_CYAN);
+                image.drawRoundRect(60,100,120,40,1,TFT_BLACK);
+                image.fillRoundRect(184,100,50,40,1,TFT_GREEN);
+                image.fillRoundRect(20,100,36,40,1,TFT_RED);
+                image.fillRoundRect(60,50,120,40,1,TFT_WHITE);
+                image.fillRoundRect(60,150,120,40,1,TFT_WHITE);
+                image.setCursor(22,115);
+                image.print("Trash");
+                image.setCursor(186,105);
+                image.setTextColor(TFT_BLACK);
+                image.print("Begin");
+                image.setCursor(186,130);
+                image.print(t.curQuests[1].progress);
+                image.print("/");
+                image.print(t.curQuests[1].requirement);
+                break;
+              }
+              case(3):
+              {
+                image.fillRoundRect(60,150,120,40,1,TFT_CYAN);
+                image.drawRoundRect(60,150,120,40,1,TFT_BLACK);
+                image.fillRoundRect(184,150,50,40,1,TFT_GREEN);
+                image.fillRoundRect(20,150,36,40,1,TFT_RED);
+                image.fillRoundRect(60,50,120,40,1,TFT_WHITE);
+                image.fillRoundRect(60,100,120,40,1,TFT_WHITE);
+                image.setCursor(22,165);
+                image.print("Trash");
+                image.setCursor(186,155);
+                image.setTextColor(TFT_BLACK);
+                image.print("Begin");
+                image.setCursor(186,180);
+                image.print(t.curQuests[2].progress);
+                image.print("/");
+                image.print(t.curQuests[2].requirement);
+                break;
+              }
+            } // end switch
+            // Display the actual quests which are available to the player
+            displayQuests(t.curQuests);
+          }
+          else
+          {
+            // create Town menu
+            image.fillRoundRect(40,20,160,20,1,TFT_BLUE);
+            image.fillRoundRect(60,60,120,40,1,TFT_WHITE);
+            image.fillRoundRect(60,120,120,40,1,TFT_WHITE);
+            image.setTextColor(TFT_WHITE);
+            //image.setTextSize(2);
+            image.setCursor(110,20);
+            image.print("Town");
+            image.setTextColor(TFT_BLACK);
+            image.setCursor(90,80);
+            image.print("Quest Board");
+            image.setCursor(110,140);
+            image.print("Shop");
+          }
+          image.pushToSprite(&background, 0, 0);
+        }
+        else // we are in dungeon
+        {
+          image.pushImage(0,0, 240, 240, dungeoncroppped);
+          image.pushToSprite(&background, 0, 0);
+        }
+        
+      } // End Case 4
       case SETTINGS:
       {
         background.fillScreen(TFT_BLACK);
@@ -229,14 +373,6 @@ void loop1(void *pvParameters) {
         background.println("SETTINGS");
         break;  
       } // End Case 3
-            case TOWNMENU:
-      {
-        background.fillScreen(TFT_BLACK);
-        background.setCursor(65, 60, 4);
-        background.setTextColor(TFT_YELLOW, TFT_BLACK);
-        background.println("Town Menu");
-        break;  
-      } // End Case 4
             case DUNGEONMENU:
       {
         background.fillScreen(TFT_BLACK);
@@ -332,7 +468,22 @@ void readScreenGesture(){
 //      Serial.println(touch.data.y);
       if (screen == 2) // map  screen
       {
-        checkLocation(touch.data.x, touch.data.y);
+        checkMapLocation(touch.data.x, touch.data.y);
+      }
+      if (screen == 3) // quest testing rn
+      {
+        if (shopDisplayed)
+        {
+          
+        }
+        else if (questDisplayed)
+        {
+          checkQuestLocation(touch.data.x, touch.data.y);
+        }
+        else
+        {
+          checkTownLocation(touch.data.x, touch.data.y);
+        }
       }
     }
   }
@@ -441,6 +592,7 @@ void setup() {
   Serial.println(touch.data.versionInfo[2]);
     
   background.setTextColor(TFT_WHITE, TFT_SKYBLUE);
+  t = setupTown(player_level,0);
 
   // Initialize timekeeping struct
   timekeeper._hours = 1;
