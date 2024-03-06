@@ -11,7 +11,8 @@
 #include "forestcropped.h"
 #include "steps.h"
 #include "travel.h"
-
+#include "settingsMenu.h"
+#include "wifitime.h"
 #include "quests.h"
 #include "towns.h"
 #include "timekeeping.h"
@@ -248,9 +249,18 @@ void loop1(void *pvParameters) {
       case SETTINGS:
       {
         background.fillScreen(TFT_BLACK);
-        background.setCursor(65, 60, 4);
+        background.setCursor(60, 40, 4);
         background.setTextColor(TFT_YELLOW, TFT_BLACK);
         background.println("SETTINGS");
+        background.setTextColor(TFT_WHITE, TFT_BLACK);
+        background.setCursor(86, 80, 4);
+        background.println("Wifi");
+        background.setCursor(86, 110, 4);
+        background.println("Backlight");
+        background.setCursor(86, 140, 4);
+        background.println("Time");
+        // fillRoundRect(int16_t x0, int16_t y0, int16_t w, int16_t h, int16_t radius, uint16_t color) 
+        background.fillRoundRect(50, 88, 8, 8, 2, TFT_YELLOW);
         break;  
       } // End Case 3
       case TOWNMENU:
@@ -475,6 +485,10 @@ void readScreenGesture(){
         {
           checkTownLocation(touch.data.x, touch.data.y);
         }
+      }
+      if (screen == SETTINGS)
+      {
+        checkMenuPress(touch.data.x, touch.data.y);
       }
     }
   }
