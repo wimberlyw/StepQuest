@@ -11,15 +11,16 @@
 #include "forestcropped.h"
 #include "steps.h"
 #include "travel.h"
+
 #include "quests.h"
 #include "towns.h"
+#include "timekeeping.h"
 
 #define I2C_SDA 35
 #define I2C_SCL 36
 #define SCREENDEBOUNCE 500
 #define BUTTONDEBOUNCE 200
 #define ANIMINTERVAL 200
-#define SECONDINTERVAL 1000
 #define STEP_TIMER_INTERVAL_MS 20
 
 Adafruit_MPU6050 mpu;
@@ -33,8 +34,8 @@ TwoWire I2CMPU = TwoWire(1);
 TFT_eSPI tft = TFT_eSPI();  // Create object "tft"
 TFT_eSprite Char = TFT_eSprite(&tft);
 TFT_eSprite background = TFT_eSprite(&tft);
-TFT_eSprite image = TFT_eSprite(&tft);
-TFT_eSprite Map = TFT_eSprite(&tft);
+TFT_eSprite worldmap = TFT_eSprite(&tft);
+
 TFT_eSprite popup = TFT_eSprite(&tft);
 TFT_eSprite popupText = TFT_eSprite(&tft);
 TFT_eSprite Dungeon = TFT_eSprite(&tft);
@@ -43,15 +44,16 @@ TFT_eSprite Castle = TFT_eSprite(&tft);
 TFT_eSprite Town_menu = TFT_eSprite(&tft);
 CST816S touch(5, 6, 9, 3);  // sda, scl, rst, irq
 
-uint16_t colors[12];
-
-
 // Timers
-unsigned int _hours = 1;
-unsigned int _minutes, _seconds = 0;
+
 unsigned long previousMillisScreen =0;
 unsigned long previousMillisButton = 0;
-unsigned long previousMillisTime = 0;
+
+
+struct timekeeping timekeeper;
+
+struct timekeeping *timkeeperPtr = &timekeeper;
+
 unsigned long currAnim, prevAnim = 0; //animation Timers
 const int interval = 1000;
 const int animInterval = 200;
@@ -72,7 +74,16 @@ enum states {
   DUNGEON,
 };
 
-unsigned long previousButtonMillis;
+enum screen {
+  HOMESCREEN = 0,
+  STATUSSCREEN,
+  WORLDMAP,
+  TOWNMENU,
+   SETTINGS,
+  DUNGEONMENU
+};
+
+
 
 // Steps
 volatile unsigned int steps = 0;
@@ -131,31 +142,10 @@ void loop1(void *pvParameters) {
       Serial.print("\t");
       Serial.println(touch.data.y);
     }
-    */
-    // Doesn't provide 24 hour time atm?
+    
     // TimeKeeping
-      if ((unsigned long)(millis() - previousMillisTime) >= SECONDINTERVAL) 
-      {
-        _seconds++;
-        //idletime--;
-        previousMillisTime = millis();
-      }
-       //time keeping
-      if (_seconds > 59)
-      {
-        _minutes++;
-        _seconds = 0;
-      }
-      if (_minutes > 59)
-      {
-        _hours++;
-        _minutes = 0;
-      }
-      if (_hours > 12)
-      {
-        _hours = 1;
-      }
-  
+    timekeeping(timkeeperPtr);  
+
      // Take inputs
      readScreenGesture();
      readButtons();
@@ -191,6 +181,7 @@ void loop1(void *pvParameters) {
 //    }
      
     // limits for the screen variable
+    
     if (travelling)
     {
       if (screen > 2) screen = 0;
@@ -198,9 +189,14 @@ void loop1(void *pvParameters) {
     }
     else
     {
-      if (screen > 3) screen = 0;
-      if (screen < 0) screen = 3;
-    }
+        if(screen>DUNGEONMENU)
+        {
+            screen = HOMESCREEN;   
+        }
+        if(screen<HOMESCREEN){
+            screen = DUNGEONMENU;
+        }
+    } 
 
     background.fillSprite(TFT_SKYBLUE);
   
@@ -208,7 +204,7 @@ void loop1(void *pvParameters) {
     // Show the appropriate screen based on the button
     switch(screen)
     {
-      case 0:
+      case HOMESCREEN:
       {   
         background.fillScreen(TFT_BLACK);
         background.setCursor(65, 60, 4);
@@ -218,14 +214,14 @@ void loop1(void *pvParameters) {
         break;
         
       } // End Case 0
-      case 1:
+      case STATUSSCREEN:
       {
 
         // Set the font colour to be white with a black background
         background.setCursor(65, 60, 4);
         background.setTextColor(TFT_RED, TFT_BLACK);
         
-        background.println("Screen 0: ");
+        background.println("Status: ");
       
         // Animate
         if (millis() - prevAnim >= ANIMINTERVAL) //every 300ms
@@ -238,19 +234,19 @@ void loop1(void *pvParameters) {
         { 
           charFrame = 0;
         }
-        Char.pushImage(0,0,96,96, C1[charFrame] ); // push to the created image at 0, 0, size of 32 x 32, the C1 array from char0.h, charFrame index.
+        Char.pushImage(0,0,96,96, C1[charFrame] ); // push to the created  at 0, 0, size of 96 x 96, the C1 array from char0.h, charFrame index.
         Char.pushToSprite(&background, 70, 115, TFT_BLACK);
         
         break;
       } // End Case 1
-      case 2: // map screen
+      case WORLDMAP: // map screen
       {
         image.pushImage(0,0, 240, 240, map1);
         image.pushToSprite(&background, 0, 0);
         
         break;
       } // End Case 2
-      case 3: // Town/Dungeon Screen
+      case TOWNMENU:
       {
         if (player_location == 0 || player_location == 1 || player_location == 3) // we are in a town
         {
@@ -368,8 +364,23 @@ void loop1(void *pvParameters) {
           image.pushToSprite(&background, 0, 0);
         }
         
+      } // End Case 4
+      case SETTINGS:
+      {
+        background.fillScreen(TFT_BLACK);
+        background.setCursor(65, 60, 4);
+        background.setTextColor(TFT_YELLOW, TFT_BLACK);
+        background.println("SETTINGS");
         break;  
       } // End Case 3
+            case DUNGEONMENU:
+      {
+        background.fillScreen(TFT_BLACK);
+        background.setCursor(65, 60, 2);
+        background.setTextColor(TFT_GREEN, TFT_BLACK);
+        background.println("DUNGEON MENU");
+        break;  
+      } // End Case 5
     } // end switch(screen)
   
     // Push Background to screen
@@ -402,6 +413,7 @@ void loop(){}
 
 
   //// *********************** Functions **********************************//
+
 void readButtons(){
 //is it time to poll the buttons?
   if (millis() - previousMillisButton >= BUTTONDEBOUNCE)  //every 300ms
@@ -549,12 +561,12 @@ void setup() {
   //tft.setRotation(1);
   Char.createSprite(96,96);
   background.createSprite(240,240);
-  image.createSprite(240,240);
+  worldmap.createSprite(240,240);
   popup.createSprite(160, 120);
   popupText.createSprite(160, 60);
   Char.setSwapBytes(true);
-  image.setSwapBytes(true);
-  
+  worldmap.setSwapBytes(true);
+
 
   // create the base for a yes, no popup
   popup.fillScreen(TFT_WHITE);
@@ -581,6 +593,12 @@ void setup() {
     
   background.setTextColor(TFT_WHITE, TFT_SKYBLUE);
   t = setupTown(player_level,0);
+
+  // Initialize timekeeping struct
+  timekeeper._hours = 1;
+  timekeeper._minutes = 0;
+  timekeeper._seconds = 0;
+  timekeeper.previousMillisTime = 0;
 
   // Multithreading setup
   xTaskCreatePinnedToCore(attachStepTimerInterruptTask, "attachStepTimerInterruptTask", 4096, NULL, 1, NULL, 0);
