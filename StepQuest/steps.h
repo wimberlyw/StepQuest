@@ -1,4 +1,3 @@
-
 /*
  * Step Algorithm is to be called via timer interrupt every 20ms
  */
@@ -33,7 +32,7 @@ int last_step = 0;
 int potential_steps = 0;
 
 // steps threshold to leave back into moving state
-int moving_threshold = 20;
+int moving_threshold = 10;
 
 // 0 = still, 1 = moving
 int state = 0;
@@ -50,6 +49,7 @@ unsigned int stepAlg(sensors_event_t a) {
 
   // calculate the amplitude
   float amp = sqrt(pow((x),2)+pow((y),2)+pow((z),2)) - correction;
+  num_steps = 0;
 
   // check if this value goes up or down compared to previous peak value
   if (amp >= last_peak)
@@ -68,12 +68,12 @@ unsigned int stepAlg(sensors_event_t a) {
           if (potential_steps >= moving_threshold) // move to moving state
           {
             state = 1;
-            num_steps += potential_steps;
+            num_steps = potential_steps;
           }
         }
         else // in moving state
         {
-          num_steps++;
+          num_steps = 1;
         }
         last_step = 0;
       }

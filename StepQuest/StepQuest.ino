@@ -38,6 +38,7 @@ TFT_eSprite Char = TFT_eSprite(&tft);
 TFT_eSprite background = TFT_eSprite(&tft);
 TFT_eSprite worldmap = TFT_eSprite(&tft);
 TFT_eSprite popup = TFT_eSprite(&tft);
+TFT_eSprite popupText = TFT_eSprite(&tft);
 TFT_eSprite Dungeon = TFT_eSprite(&tft);
 TFT_eSprite Forest = TFT_eSprite(&tft);
 TFT_eSprite Castle = TFT_eSprite(&tft);
@@ -90,6 +91,14 @@ ESP32Timer StepTimer(0);
 //hw_timer_t *StepTimer = NULL;
 volatile int stepFlag = 0;
 sensors_event_t a, g, temp;
+boolean travelling = false;
+volatile int travelSteps = 0;
+volatile int tempSteps = 0;
+volatile int totalTravelSteps = 0;
+//volatile int fractionTravelStep = 0;
+//volatile int stepsToChangePos = 0;
+//int travelPath = 0; // which path (0-3)
+//int travelPoint = 0; // which point on that path (0-7)
 
 bool IRAM_ATTR StepTimerHandler(void * timerNo)
 {
@@ -133,6 +142,27 @@ void loop1(void *pvParameters) {
      // Take inputs
      readScreenGesture();
      readButtons();
+
+     if (travelling && travelSteps == 0)
+    {
+      finishTravel();
+    }
+//    else if (travelling)
+//    {
+//      // check if position on map has moved
+//      if (steps > fractionTravelSteps)
+//      {
+//        if (travelDirection()) // if moving forward
+//        {
+//          
+//        }
+//        else // moving backwards
+//        {
+//          
+//        }
+//        fractionTravelSteps += travelSteps
+//      }
+//    }
      
     // limits for the screen variable
     if(screen>DUNGEONMENU)
@@ -186,9 +216,8 @@ void loop1(void *pvParameters) {
       } // End Case 1
       case WORLDMAP: // map screen
       {
-        worldmap.pushImage(0,0, 240, 240, map1);
-        // removed setswapbytes from here
-        worldmap.pushToSprite(&background, 0, 0, TFT_BLACK);
+        image.pushImage(0,0, 240, 240, map1);
+        image.pushToSprite(&background, 0, 0, TFT_BLACK);
         
         break;
       } // End Case 2
@@ -231,7 +260,14 @@ void loop2(void *pvParameters)
     if (stepFlag == 1)
     {
       mpu.getEvent(&a, &g, &temp);
-      steps = stepAlg(a);
+      tempSteps = stepAlg(a);
+      steps += tempSteps;
+
+      if (travelSteps > 0)
+      {
+        travelSteps -= tempSteps;
+        totalTravelSteps += tempSteps;
+      }
       stepFlag = 0;
     }
   }
@@ -291,6 +327,9 @@ void readScreenGesture(){
     }
     if (gest == "SINGLE CLICK"){
       previousMillisScreen = millis();
+//      Serial.print(touch.data.x);
+//      Serial.print(" ");
+//      Serial.println(touch.data.y);
       if (screen == 2) // map  screen
       {
         checkLocation(touch.data.x, touch.data.y);
@@ -363,12 +402,6 @@ void setup() {
     Serial.println("5 Hz");
     break;
   }
-
-  /* Timer setup for step algorithm
-  StepTimer = timerBegin(0,80,true);
-  timerAttachInterrupt(StepTimer, &StepTimer_ISR, true);
-  timerAlarmWrite(StepTimer, 20000, true);
-  timerAlarmEnable(StepTimer);*/
   
   // Screen Setup
   tft.init();
@@ -379,6 +412,7 @@ void setup() {
   background.createSprite(240,240);
   worldmap.createSprite(240,240);
   popup.createSprite(160, 120);
+  popupText.createSprite(160, 60);
   Char.setSwapBytes(true);
   worldmap.setSwapBytes(true);
 
@@ -388,6 +422,9 @@ void setup() {
   popup.fillRoundRect(5,65,150,20,1,TFT_GREEN);
   popup.fillRoundRect(5,90,150,20,1,TFT_RED); // need to add yes and no to the buttons
   popup.setTextColor(TFT_BLACK);
+  popupText.fillScreen(TFT_WHITE);
+  popupText.setTextColor(TFT_BLACK);
+  popupText.setTextWrap(true);
   popup.setCursor(65, 75);
   popup.print("YES");
   popup.setCursor(65,100);
