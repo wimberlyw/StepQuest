@@ -41,7 +41,7 @@ TFT_eSprite popupText = TFT_eSprite(&tft);
 TFT_eSprite Dungeon = TFT_eSprite(&tft);
 TFT_eSprite Forest = TFT_eSprite(&tft);
 TFT_eSprite Castle = TFT_eSprite(&tft);
-TFT_eSprite Town_menu = TFT_eSprite(&tft);
+TFT_eSprite townMenu = TFT_eSprite(&tft);
 CST816S touch(5, 6, 9, 3);  // sda, scl, rst, irq
 
 // Timers
@@ -78,9 +78,8 @@ enum screen {
   HOMESCREEN = 0,
   STATUSSCREEN,
   WORLDMAP,
-  TOWNMENU,
    SETTINGS,
-  DUNGEONMENU
+   TOWNMENU,
 };
 
 
@@ -130,7 +129,7 @@ void loop1(void *pvParameters) {
    while(1)
    {
     /*
-     * // Touch Screen data
+      Touch Screen data
     if (touch.available()) {
       Serial.print(touch.gesture());
       Serial.print("\t");
@@ -142,7 +141,7 @@ void loop1(void *pvParameters) {
       Serial.print("\t");
       Serial.println(touch.data.y);
     }
-    
+    */
     // TimeKeeping
     timekeeping(timkeeperPtr);  
 
@@ -184,23 +183,23 @@ void loop1(void *pvParameters) {
     
     if (travelling)
     {
-      if (screen > 2) screen = 0;
-      if (screen < 0) screen = 2;
+      if (screen > SETTINGS) screen = HOMESCREEN;
+      if (screen < HOMESCREEN) screen = SETTINGS;
     }
     else
     {
-        if(screen>DUNGEONMENU)
+        if(screen>TOWNMENU)
         {
             screen = HOMESCREEN;   
         }
         if(screen<HOMESCREEN){
-            screen = DUNGEONMENU;
+            screen = TOWNMENU;
         }
     } 
 
     background.fillSprite(TFT_SKYBLUE);
   
-    //// *********************** Screen Handling **********************************//
+    //// *********************** Screen Handling **********************************/
     // Show the appropriate screen based on the button
     switch(screen)
     {
@@ -241,16 +240,24 @@ void loop1(void *pvParameters) {
       } // End Case 1
       case WORLDMAP: // map screen
       {
-        image.pushImage(0,0, 240, 240, map1);
-        image.pushToSprite(&background, 0, 0);
+        worldmap.pushImage(0,0, 240, 240, map1);
+        worldmap.pushToSprite(&background, 0, 0);
         
         break;
       } // End Case 2
+      case SETTINGS:
+      {
+        background.fillScreen(TFT_BLACK);
+        background.setCursor(65, 60, 4);
+        background.setTextColor(TFT_YELLOW, TFT_BLACK);
+        background.println("SETTINGS");
+        break;  
+      } // End Case 3
       case TOWNMENU:
       {
         if (player_location == 0 || player_location == 1 || player_location == 3) // we are in a town
         {
-          image.pushImage(0,0, 240, 240, castlecropped);
+          worldmap.pushImage(0,0, 240, 240, castlecropped);
           if (shopDisplayed)
           {
             
@@ -258,82 +265,82 @@ void loop1(void *pvParameters) {
           }
           else if (questDisplayed)
           {
-            image.fillRoundRect(40,20,160,20,1,TFT_BLUE);
-            image.setTextColor(TFT_WHITE);
+            worldmap.fillRoundRect(40,20,160,20,1,TFT_BLUE);
+            worldmap.setTextColor(TFT_WHITE);
             //image.setTextSize(2);
-            image.setCursor(90,20);
-            image.print("Quest Board");
-            image.fillRoundRect(40,200,160,20,1,TFT_RED);
-            image.setCursor(110,210);
-            image.print("Exit");
-            image.setCursor(63,30);
-            image.print(t.quests_per_12hr);
-            image.print(" quests remaining.");
+            worldmap.setCursor(90,20);
+            worldmap.print("Quest Board");
+            worldmap.fillRoundRect(40,200,160,20,1,TFT_RED);
+            worldmap.setCursor(110,210);
+            worldmap.print("Exit");
+            worldmap.setCursor(63,30);
+            worldmap.print(t.quests_per_12hr);
+            worldmap.print(" quests remaining.");
   
             switch(quest_selected)
             {
               case(0):
               {
-                image.fillRoundRect(60,50,120,40,1,TFT_WHITE);
-                image.fillRoundRect(60,100,120,40,1,TFT_WHITE);
-                image.fillRoundRect(60,150,120,40,1,TFT_WHITE);
+                worldmap.fillRoundRect(60,50,120,40,1,TFT_WHITE);
+                worldmap.fillRoundRect(60,100,120,40,1,TFT_WHITE);
+                worldmap.fillRoundRect(60,150,120,40,1,TFT_WHITE);
                 break;
               }
               case(1):
               {
-                image.fillRoundRect(60,50,120,40,1,TFT_CYAN);
-                image.drawRoundRect(60,50,120,40,1,TFT_BLACK);
-                image.fillRoundRect(184,50,50,40,1,TFT_GREEN);
-                image.fillRoundRect(20,50,36,40,1,TFT_RED);
-                image.fillRoundRect(60,100,120,40,1,TFT_WHITE);
-                image.fillRoundRect(60,150,120,40,1,TFT_WHITE);
-                image.setCursor(22,65);
-                image.print("Trash");
-                image.setCursor(186,55);
-                image.setTextColor(TFT_BLACK);
-                image.print("Begin");
-                image.setCursor(186,80);
-                image.print(t.curQuests[0].progress);
-                image.print("/");
-                image.print(t.curQuests[0].requirement);
+                worldmap.fillRoundRect(60,50,120,40,1,TFT_CYAN);
+                worldmap.drawRoundRect(60,50,120,40,1,TFT_BLACK);
+                worldmap.fillRoundRect(184,50,50,40,1,TFT_GREEN);
+                worldmap.fillRoundRect(20,50,36,40,1,TFT_RED);
+                worldmap.fillRoundRect(60,100,120,40,1,TFT_WHITE);
+                worldmap.fillRoundRect(60,150,120,40,1,TFT_WHITE);
+                worldmap.setCursor(22,65);
+                worldmap.print("Trash");
+                worldmap.setCursor(186,55);
+                worldmap.setTextColor(TFT_BLACK);
+                worldmap.print("Begin");
+                worldmap.setCursor(186,80);
+                worldmap.print(t.curQuests[0].progress);
+                worldmap.print("/");
+                worldmap.print(t.curQuests[0].requirement);
                 break;
               }
               case(2):
               {
-                image.fillRoundRect(60,100,120,40,1,TFT_CYAN);
-                image.drawRoundRect(60,100,120,40,1,TFT_BLACK);
-                image.fillRoundRect(184,100,50,40,1,TFT_GREEN);
-                image.fillRoundRect(20,100,36,40,1,TFT_RED);
-                image.fillRoundRect(60,50,120,40,1,TFT_WHITE);
-                image.fillRoundRect(60,150,120,40,1,TFT_WHITE);
-                image.setCursor(22,115);
-                image.print("Trash");
-                image.setCursor(186,105);
-                image.setTextColor(TFT_BLACK);
-                image.print("Begin");
-                image.setCursor(186,130);
-                image.print(t.curQuests[1].progress);
-                image.print("/");
-                image.print(t.curQuests[1].requirement);
+                worldmap.fillRoundRect(60,100,120,40,1,TFT_CYAN);
+                worldmap.drawRoundRect(60,100,120,40,1,TFT_BLACK);
+                worldmap.fillRoundRect(184,100,50,40,1,TFT_GREEN);
+                worldmap.fillRoundRect(20,100,36,40,1,TFT_RED);
+                worldmap.fillRoundRect(60,50,120,40,1,TFT_WHITE);
+                worldmap.fillRoundRect(60,150,120,40,1,TFT_WHITE);
+                worldmap.setCursor(22,115);
+                worldmap.print("Trash");
+                worldmap.setCursor(186,105);
+                worldmap.setTextColor(TFT_BLACK);
+                worldmap.print("Begin");
+                worldmap.setCursor(186,130);
+                worldmap.print(t.curQuests[1].progress);
+                worldmap.print("/");
+                worldmap.print(t.curQuests[1].requirement);
                 break;
               }
               case(3):
               {
-                image.fillRoundRect(60,150,120,40,1,TFT_CYAN);
-                image.drawRoundRect(60,150,120,40,1,TFT_BLACK);
-                image.fillRoundRect(184,150,50,40,1,TFT_GREEN);
-                image.fillRoundRect(20,150,36,40,1,TFT_RED);
-                image.fillRoundRect(60,50,120,40,1,TFT_WHITE);
-                image.fillRoundRect(60,100,120,40,1,TFT_WHITE);
-                image.setCursor(22,165);
-                image.print("Trash");
-                image.setCursor(186,155);
-                image.setTextColor(TFT_BLACK);
-                image.print("Begin");
-                image.setCursor(186,180);
-                image.print(t.curQuests[2].progress);
-                image.print("/");
-                image.print(t.curQuests[2].requirement);
+                worldmap.fillRoundRect(60,150,120,40,1,TFT_CYAN);
+                worldmap.drawRoundRect(60,150,120,40,1,TFT_BLACK);
+                worldmap.fillRoundRect(184,150,50,40,1,TFT_GREEN);
+                worldmap.fillRoundRect(20,150,36,40,1,TFT_RED);
+                worldmap.fillRoundRect(60,50,120,40,1,TFT_WHITE);
+                worldmap.fillRoundRect(60,100,120,40,1,TFT_WHITE);
+                worldmap.setCursor(22,165);
+                worldmap.print("Trash");
+                worldmap.setCursor(186,155);
+                worldmap.setTextColor(TFT_BLACK);
+                worldmap.print("Begin");
+                worldmap.setCursor(186,180);
+                worldmap.print(t.curQuests[2].progress);
+                worldmap.print("/");
+                worldmap.print(t.curQuests[2].requirement);
                 break;
               }
             } // end switch
@@ -343,44 +350,28 @@ void loop1(void *pvParameters) {
           else
           {
             // create Town menu
-            image.fillRoundRect(40,20,160,20,1,TFT_BLUE);
-            image.fillRoundRect(60,60,120,40,1,TFT_WHITE);
-            image.fillRoundRect(60,120,120,40,1,TFT_WHITE);
-            image.setTextColor(TFT_WHITE);
-            //image.setTextSize(2);
-            image.setCursor(110,20);
-            image.print("Town");
-            image.setTextColor(TFT_BLACK);
-            image.setCursor(90,80);
-            image.print("Quest Board");
-            image.setCursor(110,140);
-            image.print("Shop");
+            worldmap.fillRoundRect(40,20,160,20,1,TFT_BLUE);
+            worldmap.fillRoundRect(60,60,120,40,1,TFT_WHITE);
+            worldmap.fillRoundRect(60,120,120,40,1,TFT_WHITE);
+            worldmap.setTextColor(TFT_WHITE);
+            //worldmap.setTextSize(2);
+            worldmap.setCursor(110,20);
+            worldmap.print("Town");
+            worldmap.setTextColor(TFT_BLACK);
+            worldmap.setCursor(90,80);
+            worldmap.print("Quest Board");
+            worldmap.setCursor(110,140);
+            worldmap.print("Shop");
           }
-          image.pushToSprite(&background, 0, 0);
+          worldmap.pushToSprite(&background, 0, 0);
         }
         else // we are in dungeon
         {
-          image.pushImage(0,0, 240, 240, dungeoncroppped);
-          image.pushToSprite(&background, 0, 0);
+          worldmap.pushImage(0,0, 240, 240, dungeoncroppped);
+          worldmap.pushToSprite(&background, 0, 0);
         }
         
       } // End Case 4
-      case SETTINGS:
-      {
-        background.fillScreen(TFT_BLACK);
-        background.setCursor(65, 60, 4);
-        background.setTextColor(TFT_YELLOW, TFT_BLACK);
-        background.println("SETTINGS");
-        break;  
-      } // End Case 3
-            case DUNGEONMENU:
-      {
-        background.fillScreen(TFT_BLACK);
-        background.setCursor(65, 60, 2);
-        background.setTextColor(TFT_GREEN, TFT_BLACK);
-        background.println("DUNGEON MENU");
-        break;  
-      } // End Case 5
     } // end switch(screen)
   
     // Push Background to screen
@@ -466,11 +457,11 @@ void readScreenGesture(){
 //      Serial.print(touch.data.x);
 //      Serial.print(" ");
 //      Serial.println(touch.data.y);
-      if (screen == 2) // map  screen
+      if (screen == WORLDMAP) // map  screen
       {
         checkMapLocation(touch.data.x, touch.data.y);
       }
-      if (screen == 3) // quest testing rn
+      if (screen == TOWNMENU) // quest testing rn
       {
         if (shopDisplayed)
         {
@@ -564,8 +555,11 @@ void setup() {
   worldmap.createSprite(240,240);
   popup.createSprite(160, 120);
   popupText.createSprite(160, 60);
+  townMenu.createSprite(240,240);
   Char.setSwapBytes(true);
   worldmap.setSwapBytes(true);
+  
+  townMenu.setSwapBytes(true);
 
 
   // create the base for a yes, no popup
