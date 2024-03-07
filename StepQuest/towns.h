@@ -14,4 +14,6 @@ void displayQuestMenu();
 
 void checkTownLocation(int x, int y);
 
+void refreshTown(Town* t, Player p);
+
 #endif

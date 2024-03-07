@@ -17,11 +17,6 @@
 #define TRAVEL_H
 
 #include "structs.h"
-#define SCREENDEBOUNCE 500
-
-void writePopupText(String s);
-
-boolean checkInteraction();
 
 String locationName(int location);
 

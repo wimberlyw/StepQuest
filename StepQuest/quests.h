@@ -11,4 +11,14 @@ void displayQuests(Quest quests[]);
 
 void checkQuestLocation(int x, int y);
 
+void invalidateQuest();
+
+void beginQuest();
+
+void completeQuest();
+
+void jumpingJacks(sensors_event_t a);
+
+void squats(sensors_event_t a);
+
 #endif

@@ -3,7 +3,7 @@
  */
 
 // default threshold
-float threshold = 1.0;
+float threshold = 1.2; // changed from 1
 
 int num_steps = 0;
 
@@ -17,13 +17,8 @@ float delay_time = delay_time_seconds * 1000;
 float low_bound_cycles = low_bound_seconds / delay_time_seconds;
 float high_bound_cycles = high_bound_seconds / delay_time_seconds;
 
-// enter the drift of the accelerometer (unique to each MPU6050)
-float x_drift = 0.40;
-float y_drift = 0.45;
-float z_drift = 10;
-
 // offsets the gravity and x,y,z drift in order to get an amplitude close to 0 regardless of orientation
-float correction = sqrt(pow((x_drift),2)+pow((y_drift),2)+pow((z_drift),2));
+extern float correction;
 
 // num cycles since last step
 int last_step = 0;

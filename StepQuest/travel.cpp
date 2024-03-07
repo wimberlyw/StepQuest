@@ -1,4 +1,5 @@
 #include "travel.h"
+#include "popup.h"
 
 Location Town1 = {.x1=25,.x2=55,.y1=190,.y2=215};
 Location Town2 = {.x1=165,.x2=210,.y1=180,.y2=230};
@@ -6,10 +7,6 @@ Location Dungeon1 = {.x1=205,.x2=240,.y1=100,.y2=125};
 Location Town3 = {.x1=0,.x2=55,.y1=95,.y2=130};
 Location Dungeon2 = {.x1=130,.x2=185,.y1=5,.y2=65};
 Location travelLocations[5] = {Town1,Town2,Dungeon1,Town3,Dungeon2};
-
-// Defining yes and no locations for popups
-Location Yes = {.x1=40,.x2=200,.y1=155,.y2=170};
-Location No = {.x1=40,.x2=200,.y1=175,.y2=190};
 
 // Steps between locations (simple for now)
 int locSteps[4] = {50, 100, 150, 200};
@@ -25,55 +22,8 @@ extern boolean travelling;
 extern int player_location;
 //extern volatile int stepsToChangePos;
 
-// external items
-extern TFT_eSprite background;
-extern TFT_eSprite popup;
-extern TFT_eSprite popupText;
-extern CST816S touch;
-extern unsigned long previousMillisScreen;
 extern int screen;
-
-boolean ans;
-
-void writePopupText(String s)
-{
-  popupText.fillScreen(TFT_WHITE);
-  popupText.setCursor(5,5);
-  popupText.setTextColor(TFT_BLACK);
-  popupText.print(s);
-}
-
-boolean checkInteraction() // returns true if popup is answered
-{
-  if(touch.available()){ 
-    // Check if the gesture falls outside of debounce time
-    if (millis() - previousMillisScreen < SCREENDEBOUNCE){
-      return false;
-    }
-    //Get the gesture
-    String gest = touch.gesture();
-    Serial.println(gest);
-  
-    if (gest == "SINGLE CLICK")
-    {
-      previousMillisScreen = millis();
-      int x = touch.data.x;
-      int y = touch.data.y;
-      
-      if (Yes.x1 <= x && Yes.x2 >= x && Yes.y1 <= y && Yes.y2 >= y)
-      {
-        ans = true;
-        return true;
-      }
-      else if (No.x1 <= x && No.x2 >= x && No.y1 <= y && No.y2 >= y)
-      {
-        ans = false;
-        return true;
-      }
-    }
-  }
-  return false;
-}
+extern boolean left;
 
 String locationName(int location)
 {
@@ -111,14 +61,11 @@ void finishTravel() // since the screen freezes (including step screen) maybe ma
 
   // Might want to implement a way to push a notification that tells the user they finished travel
   // Temporarily though
-  writePopupText("You have arrived at your destination!");
-  popupText.pushToSprite(&background,40,80);
-  background.pushSprite(0,0);
-
-  while(!touch.available()){}
-
+  String s = "You have arrived at your destination!";
+  
+  createPopup(s);
 }
-// NEED TO CONSIDER THE PREVIOUS TRAVEL LOCATION TOO WHEN CALCULATING STEPS!
+
 void beginTravel(int location)
 {
   int potentialSteps = 0;
@@ -174,12 +121,7 @@ void beginTravel(int location)
   s = s + " steps to get to ";
   s = s + locationName(location);
   s = s + ". Is this okay?";
-  writePopupText(s);
-  popup.pushToSprite(&background,40,80);
-  popupText.pushToSprite(&background,40,80);
-  background.pushSprite(0,0);
-
-  while(!checkInteraction()){} // wait until ppup is answered
+  boolean ans = createYesNoPopup(s);
 
   if (ans)
   {
@@ -190,22 +132,15 @@ void beginTravel(int location)
     travelLocation = location;
     travelSteps = potentialSteps;
     player_location = -1;
+    left = true;
 //    fractionTravelSteps = (int)(travelSteps/8);
     totalTravelSteps = 0;
     travelling = true;
-    writePopupText("Travel started! Enjoy your trip!");
-    popupText.pushToSprite(&background,40,80);
-    background.pushSprite(0,0); // need to find way to remove popup (yes,no) from this, need to check what happens at end of travel (does it work).
-
-    while(!touch.available()){}
+    createPopup("Travel started! Enjoy your trip!");
 
     return;
   }
-  writePopupText("Travel cancelled.");
-  popupText.pushToSprite(&background,40,80);
-  background.pushSprite(0,0);
-
-  while(!touch.available()){}
+  createPopup("Travel cancelled.");
 
   return;
 }
@@ -226,29 +161,19 @@ void checkMapLocation(int x, int y)
             String s = "You are currently traveling to that location! You have ";
             s = s + travelSteps;
             s = s + " remaining.";
-            writePopupText(s);
-            popupText.pushToSprite(&background, 40,80);
-            background.pushSprite(0,0);
-
-            while(!touch.available()){}
+            createPopup(s);
 
             return;
           }
           else
           {
             // Do we want to travel there instead? if yes function call
-            popup.pushToSprite(&background,40,80);
             String s = "You are currently travelling to ";
             s = s + locationName(travelLocation);
             s = s + ". Would you rather travel to ";
             s = s + locationName(i);
             s = s + "?";
-
-            writePopupText(s);
-            popupText.pushToSprite(&background,40,80);
-            background.pushSprite(0,0);
-
-            while(!checkInteraction()){} // wait until popup is answered
+            boolean ans = createYesNoPopup(s);
 
             if (ans)
             {
@@ -259,21 +184,16 @@ void checkMapLocation(int x, int y)
         }
         else if (i == curLocation)
         {
-          screen = 3; // assumes 3 is the local location screen, may change
+          screen = TOWNMENU; // assumes 3 is the local location screen, may change
           return;    
         }
         else
         {
           // Do you want to travel here? If yes function call
-          popup.pushToSprite(&background, 40, 80);
           String s = "Do you want to travel to ";
           s = s + locationName(i);
           s = s + "?";
-          writePopupText(s);
-          popupText.pushToSprite(&background, 40,80);
-          background.pushSprite(0,0);
-
-          while(!checkInteraction()){} // wait until popup is answered
+          boolean ans = createYesNoPopup(s);
 
           if (ans)
           {

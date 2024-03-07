@@ -82,3 +82,38 @@ void checkTownLocation(int x, int y) // figures out what button has been pressed
     }
   }
 }
+
+void refreshTown(Town* t, Player p) // only refreshes quests atm
+{
+  // Refresh how many items and quests per 12hr
+  switch(p.location)
+  {
+    case(0):
+    {
+      t->quests_per_12hr=10;
+      t->items_per_12hr=5;
+      break;
+    }
+    case(1):
+    {
+      t->quests_per_12hr=20;
+      t->items_per_12hr=10;
+      break;
+    }
+    case(3):
+    {
+      t->quests_per_12hr=30;
+      t->items_per_12hr=15;
+      break;
+    }
+  }//end switch
+
+  // refresh any invalid quests
+  for (int i = 0; i < 3; i++)
+  {
+    if (!t->curQuests[i].valid)
+    {
+      t->curQuests[i] = createQuest(p.level,p.location);
+    }
+  }
+}
