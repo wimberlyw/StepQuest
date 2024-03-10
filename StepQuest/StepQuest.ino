@@ -96,8 +96,7 @@ sensors_event_t a, g, temp;
 boolean travelling = false;
 volatile int travelSteps = 0;
 volatile int tempSteps = 0;
-volatile int totalTravelSteps = 0;
-int player_location = 0; // start at town 1
+volatile int stepsToNextPath = 0; 
 //volatile int fractionTravelStep = 0;
 //volatile int stepsToChangePos = 0;
 //int travelPath = 0; // which path (0-3)
@@ -280,8 +279,65 @@ void loop1(void *pvParameters) {
       case WORLDMAP: // map screen
       {
         worldmap.pushImage(0,0, 240, 240, map1);
+
+        if (p.path != -1) // we are travelling
+        {
+          switch(p.path)
+          {
+            case(0): // path 1
+            {
+              worldmap.drawSpot(130,232,4,TFT_BLACK);
+              break;
+            } // end of case 0
+            case(1): // path 2
+            {
+              worldmap.drawSpot(123,135,4,TFT_BLACK);
+              break;
+            } // end of case 1
+            case(2): // path 3
+            {
+              worldmap.drawSpot(120,103,4,TFT_BLACK);
+              break;
+            } // end of case 2
+            case(3): // path 4
+            {
+              worldmap.drawSpot(120,50,4,TFT_BLACK);
+              break;
+            } // end of case 3
+          } // end of switch
+        }
+        else
+        {
+          switch(p.location)
+          {
+            case(0): // town 1
+            {
+              worldmap.drawSpot(55,200,4,TFT_BLACK);
+              break;
+            } // end of case 0
+            case(1): // town 2
+            {
+              worldmap.drawSpot(171,200,4,TFT_BLACK);
+              break;
+            } // end of case 1
+            case(2): // dungeon 1
+            {
+              worldmap.drawSpot(210,107,4,TFT_BLACK);
+              break;
+            } // end of case 2
+            case(3): // town 3
+            {
+              worldmap.drawSpot(54,95,4,TFT_BLACK);
+              break;
+            } // end of case 3
+            case(4): // dungeon 2
+            {
+              worldmap.drawSpot(152,45,4,TFT_BLACK);
+              break;
+            } // end of case 4
+          } // end of switch
+        }
         worldmap.pushToSprite(&background, 0, 0);
-        
         break;
       } // End Case 2
       case SETTINGS:
@@ -294,7 +350,7 @@ void loop1(void *pvParameters) {
       } // End Case 3
       case TOWNMENU: // Also dungeon menu
       {
-        if (player_location == 0 || player_location == 1 || player_location == 3) // we are in a town
+        if (p.location == 0 || p.location == 1 || p.location == 3) // we are in a town
         {
           worldmap.pushImage(0,0, 240, 240, castlecropped);
           if (shopDisplayed)
@@ -482,18 +538,12 @@ void loop2(void *pvParameters)
       {
         jumpingJacks(a);
       }
-      else
+      else // just walking
       {
         tempSteps = stepAlg(a);
         steps += tempSteps;
-  
-        if (travelSteps > 0)
-        {
-          travelSteps -= tempSteps;
-          totalTravelSteps += tempSteps;
-          if (p.location != -1 && totalTravelSteps > 0) p.location = -1;
-        }
-        if (stepTaskActive)
+
+        if (stepTaskActive) // step task, we are in location, not travelling
         {
           if (t.curQuests[quest_selected-1].progress < t.curQuests[quest_selected-1].requirement)
           {
@@ -504,7 +554,19 @@ void loop2(void *pvParameters)
             stepTaskActive = false;
             completeQuest();
           }
-          
+        }
+        else if (travelSteps > 0) // we are travelling rn
+        {
+          travelSteps -= tempSteps;
+          stepsToNextPath -= tempSteps;
+
+          if (stepsToNextPath <= 0)
+          {
+            if (travelSteps > 0) // not done travelling
+            {
+              getStepsToNextPath();
+            }
+          }
         }
       }
       stepFlag = 0;

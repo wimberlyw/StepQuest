@@ -14,15 +14,16 @@ int locSteps[4] = {20, 25, 30, 35};
 //                0-1  1-2  2-3  3-4
 
 int travelLocation = 0; // where player is travelling rn
+boolean travelDirection = false; // false means backwards, true means forwards
 extern volatile int travelSteps; // steps left
-extern volatile int totalTravelSteps; // steps taken
 //extern volatile int fractionTravelSteps; // divides travelSteps into eight sections to display progress on map
 extern boolean travelling;
+extern volatile int stepsToNextPath; // tells us how many steps until we reach the next path
 extern Player p;
 //extern volatile int stepsToChangePos;
 
 extern int screen;
-extern boolean left;
+extern boolean left; // one time check to set quests inactive when leaving a location
 
 String locationName(int location)
 {
@@ -51,10 +52,53 @@ String locationName(int location)
   } // end switch
 }
 
+//void getStepsToNextPath()
+//{
+//  if (travelDirection) // forward
+//  {
+//    if ((p.path+1) > 3) return; // prevent errors
+//    stepsToNextPath = locSteps[p.path+1];
+//    p.path++; 
+//  }
+//  else
+//  {
+//    if ((p.path-1) < 0) return; // prevent errors
+//    stepsToNextPath = locSteps[p.path-1];
+//    p.path--;
+//  }
+//}
+
+void getStepsToNextPath()
+{
+  int ans = 0;
+  if (travelDirection) // forward
+  {
+    if ((p.path+1) > 3) return; // prevent errors
+    p.path++; 
+    ans = travelSteps;
+    for (int i = (p.path+1); i < travelLocation; i++)
+    {
+      ans -= locSteps[i];
+    }
+  }
+  else
+  {
+    if ((p.path-1) < 0) return; // prevent errors
+    p.path--;
+    ans = travelSteps;
+    for (int i = (p.path-1); i >= travelLocation; i++)
+    {
+      ans -= locSteps[i];
+    }
+  }
+  stepsToNextPath = ans;
+}
+
 void finishTravel() // since the screen freezes (including step screen) maybe make it block out the entire background as a notification
 {
   travelling = false;
   p.location = travelLocation;
+  p.path = -1;
   // also need to setup location info like shop items, quest board, etc.
 
   // Might want to implement a way to push a notification that tells the user they finished travel
@@ -68,55 +112,76 @@ void finishTravel() // since the screen freezes (including step screen) maybe ma
 void beginTravel(int location)
 {
   int potentialSteps = 0;
+  int potentialStepsToPath = 0;
+  boolean potentialDirection = false;
+  int potentialPath = -1;
 
   if (travelling)
   {
-    if (totalTravelSteps == 0 && p.location != -1)
+    if (p.path < location) // travelling forward from current location
     {
-      // leave at 0 steps
-    }
-    else if (travelLocation < location) // we're travelling past where we were before, add new location steps to current ones
-    {
-      potentialSteps += travelSteps;
+      potentialDirection = true;
+      if (travelDirection) // we were moving forward
+      {
+        potentialSteps += stepsToNextPath;
+      }
+      else // we were moving backwards
+      {
+        potentialSteps += (locSteps[p.path]-stepsToNextPath);
+      }
+      potentialStepsToPath = potentialSteps;
 
-      for (int i = travelLocation; i < location; i++)
+      for (int i = (p.path+1); i < location; i++)
       {
         potentialSteps += locSteps[i];
       }
     }
-    else // we're no longer travelling as far as before, subtract the difference from current steps
+    else // travelling backwards from current location
     {
-      potentialSteps += travelSteps;
-
-      for (int i = location; i < travelLocation; i++)
+      potentialDirection = false;
+      if (travelDirection) // we were moving forward
       {
-        potentialSteps -= locSteps[i];
+        potentialSteps += (locSteps[p.path]-stepsToNextPath);
+      }
+      else // we were moving backwards
+      {
+        potentialSteps += stepsToNextPath;
+      }
+      potentialStepsToPath = potentialSteps;
+
+      for (int i = (p.path-1); i >= location; i--)
+      {
+        potentialSteps += locSteps[i];
       }
     }
-//    flag = true;
   }
-  else
+  else // we are starting from a location
   {
-    if (p.location < location) // moving forward
+    if (p.location < location) // moving forward on map
     {
+      potentialStepsToPath = locSteps[p.location]; // only has steps to finish first path
+      potentialDirection = true;
+      potentialPath = p.location;
+
       for (int i = p.location; i < location; i++)
       {
         potentialSteps += locSteps[i];
       }
     }
-    else // moving backwards
+    else // moving backwards on map
     {
-      for (int i = p.location; i > location; i--)
+      potentialStepsToPath = locSteps[p.location-1]; // only has steps to finish first path
+      potentialDirection = false;
+      potentialPath = p.location-1;
+
+      for (int i = location; i < p.location; i++)
       {
-        potentialSteps += locSteps[i-1];
+        potentialSteps += locSteps[i];
       }
     }
   }
 
-  if (potentialSteps < 0)
-  {
-    potentialSteps *= -1;
-  }
+  
   
   String s = "It will take ";
   s = s + potentialSteps;
@@ -127,18 +192,18 @@ void beginTravel(int location)
 
   if (ans)
   {
-//    if (flag)
-//    {
-//      p.location = travelLocation;
-//    }
     recallShop();
+    left = true;
     travelLocation = location;
     travelSteps = potentialSteps;
-    //p.location = -1;
-    left = true;
-//    fractionTravelSteps = (int)(travelSteps/8);
-    totalTravelSteps = 0;
+    stepsToNextPath = potentialStepsToPath;
+    travelDirection = potentialDirection;
     travelling = true;
+    if (potentialPath != -1)
+    {
+      p.path = potentialPath;
+    }
+
     createPopup("Travel started! Enjoy your trip!");
 
     return;

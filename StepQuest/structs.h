@@ -57,6 +57,7 @@ typedef struct Player{
   int gold;
   int xp;
   int xpToNextLvl;
+  int path; // what path are we on? 0-3, -1 means not travelling
   int itemLevels[3]; // keeps max stat for each item the player can hold
   Item items[3]; // keeps the best item player has stored for viewing
   int questRerolls[3]; // keeps amount of rerolls per 12 hr stored to avoid abuse

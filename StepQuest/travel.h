@@ -20,6 +20,8 @@
 
 String locationName(int location);
 
+void getStepsToNextPath();
+
 void finishTravel();
 
 void beginTravel(int location);

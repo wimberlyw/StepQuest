@@ -24,6 +24,7 @@ Player setupPlayer()
   p.gold = 500;
   p.xp = 0;
   p.xpToNextLvl = 100;
+  p.path = -1;
   p.items[0] = sword;
   p.items[1] = helmet;
   p.items[2] = chestpiece;
