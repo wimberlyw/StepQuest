@@ -15,6 +15,7 @@
 #include "player.h"
 #include "quests.h"
 #include "towns.h"
+#include "shops.h"
 #include "timekeeping.h"
 
 #define I2C_SDA 35
@@ -122,7 +123,7 @@ boolean squatTaskActive = false;
 boolean left = false;
 
 // Player
-Player p = {.location=0,.level=1,.gold=0,.xp=0,.xpToNextLvl=100};
+Player p;
 
 bool IRAM_ATTR StepTimerHandler(void * timerNo)
 {
@@ -168,7 +169,7 @@ void loop1(void *pvParameters) {
 
      if (timkeeperPtr->_hours == 12 && timkeeperPtr->_minutes == 0 && timkeeperPtr->_seconds == 0)
      {
-       refreshTown(&t, p); // untested since time isn't fully implemented yet
+       refreshTowns(); // untested since time isn't fully implemented yet
      }
 
      if (left)// you can't do tasks outside of towns/dungeons
@@ -180,13 +181,13 @@ void loop1(void *pvParameters) {
        left = false;
      }
 
-     if (travelling && travelSteps == 0)
+     if (travelling && travelSteps <= 0)
     {
       finishTravel();
       // setup the location
-      if (player_location == 0 || player_location == 1 || player_location == 3)
+      if (p.location == 0 || p.location == 1 || p.location == 3)
       {
-        t = setupTown(p.level,p.location);
+        setupTown(p.level,p.location);
       }
       else
       {
@@ -257,6 +258,8 @@ void loop1(void *pvParameters) {
         background.print(p.gold);
         background.print("XP: ");
         background.print(p.xp);
+        background.print("ARMOR:");
+        background.print((p.itemLevels[0]+p.itemLevels[1]+p.itemLevels[2]));
       
         // Animate
         if (millis() - prevAnim >= ANIMINTERVAL) //every 300ms
@@ -296,7 +299,30 @@ void loop1(void *pvParameters) {
           worldmap.pushImage(0,0, 240, 240, castlecropped);
           if (shopDisplayed)
           {
-            
+            worldmap.fillRoundRect(40,20,160,20,1,TFT_BLUE);
+            worldmap.setTextColor(TFT_WHITE);
+            //image.setTextSize(2);
+            worldmap.setCursor(110,20);
+            worldmap.print("Shop");
+            worldmap.fillRoundRect(40,200,160,20,1,TFT_RED);
+            worldmap.setCursor(110,210);
+            worldmap.print("Exit");
+            worldmap.setCursor(50,30);
+            worldmap.print(p.itemRerolls[p.location]);
+            worldmap.print(" item rerolls remaining.");
+            worldmap.fillRoundRect(60,50,120,40,1,TFT_WHITE);
+            worldmap.fillRoundRect(60,100,120,40,1,TFT_WHITE);
+            worldmap.fillRoundRect(60,150,120,40,1,TFT_WHITE);
+            worldmap.fillRoundRect(20,50,36,40,1,TFT_RED);
+            worldmap.setCursor(22,65);
+            worldmap.print("Change");
+            worldmap.fillRoundRect(20,100,36,40,1,TFT_RED);
+            worldmap.setCursor(22,115);
+            worldmap.print("Change");
+            worldmap.fillRoundRect(20,150,36,40,1,TFT_RED);
+            worldmap.setCursor(22,165);
+            worldmap.print("Change");
+            displayItems();
             
           }
           else if (questDisplayed)
@@ -310,7 +336,7 @@ void loop1(void *pvParameters) {
             worldmap.setCursor(110,210);
             worldmap.print("Exit");
             worldmap.setCursor(63,30);
-            worldmap.print(t.quests_per_12hr);
+            worldmap.print(p.questRerolls[p.location]);
             worldmap.print(" quests remaining.");
   
             switch(quest_selected)
@@ -465,6 +491,7 @@ void loop2(void *pvParameters)
         {
           travelSteps -= tempSteps;
           totalTravelSteps += tempSteps;
+          if (p.location != -1 && totalTravelSteps > 0) p.location = -1;
         }
         if (stepTaskActive)
         {
@@ -550,13 +577,10 @@ void readScreenGesture(){
       {
         if (shopDisplayed)
         {
-          
+          checkShopLocation(touch.data.x, touch.data.y);
         }
         else if (questDisplayed)
         {
-          Serial.print(touch.data.x);
-          Serial.print(" ");
-          Serial.println(touch.data.y);
           checkQuestLocation(touch.data.x, touch.data.y);
         }
         else
@@ -674,7 +698,8 @@ void setup() {
   Serial.println(touch.data.versionInfo[2]);
     
   background.setTextColor(TFT_WHITE, TFT_SKYBLUE);
-  t = setupTown(p.level,p.location);
+  setupTown(p.level, p.location);
+  p = setupPlayer();
 
   // Initialize timekeeping struct
   timekeeper._hours = 1;

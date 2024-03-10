@@ -1,4 +1,5 @@
 #include "travel.h"
+#include "shops.h"
 #include "popup.h"
 
 Location Town1 = {.x1=25,.x2=55,.y1=190,.y2=215};
@@ -9,17 +10,15 @@ Location Dungeon2 = {.x1=130,.x2=185,.y1=5,.y2=65};
 Location travelLocations[5] = {Town1,Town2,Dungeon1,Town3,Dungeon2};
 
 // Steps between locations (simple for now)
-int locSteps[4] = {50, 100, 150, 200};
+int locSteps[4] = {20, 25, 30, 35};
 //                0-1  1-2  2-3  3-4
 
-// player location based on town/dungeon
-int curLocation = 0;
 int travelLocation = 0; // where player is travelling rn
 extern volatile int travelSteps; // steps left
 extern volatile int totalTravelSteps; // steps taken
 //extern volatile int fractionTravelSteps; // divides travelSteps into eight sections to display progress on map
 extern boolean travelling;
-extern int player_location;
+extern Player p;
 //extern volatile int stepsToChangePos;
 
 extern int screen;
@@ -55,8 +54,7 @@ String locationName(int location)
 void finishTravel() // since the screen freezes (including step screen) maybe make it block out the entire background as a notification
 {
   travelling = false;
-  curLocation = travelLocation;
-  player_location = travelLocation;
+  p.location = travelLocation;
   // also need to setup location info like shop items, quest board, etc.
 
   // Might want to implement a way to push a notification that tells the user they finished travel
@@ -66,14 +64,18 @@ void finishTravel() // since the screen freezes (including step screen) maybe ma
   createPopup(s);
 }
 
+// To be accurate, I need to know what path I'm on at any point. Fix on different branch soon.
 void beginTravel(int location)
 {
   int potentialSteps = 0;
-//  boolean flag = false; // are we changing from a travelling position?
 
   if (travelling)
   {
-    if (travelLocation < location) // we're travelling past where we were before, add new location steps to current ones
+    if (totalTravelSteps == 0 && p.location != -1)
+    {
+      // leave at 0 steps
+    }
+    else if (travelLocation < location) // we're travelling past where we were before, add new location steps to current ones
     {
       potentialSteps += travelSteps;
 
@@ -95,16 +97,16 @@ void beginTravel(int location)
   }
   else
   {
-    if (curLocation < location) // moving forward
+    if (p.location < location) // moving forward
     {
-      for (int i = curLocation; i < location; i++)
+      for (int i = p.location; i < location; i++)
       {
         potentialSteps += locSteps[i];
       }
     }
     else // moving backwards
     {
-      for (int i = curLocation; i > location; i--)
+      for (int i = p.location; i > location; i--)
       {
         potentialSteps += locSteps[i-1];
       }
@@ -120,18 +122,19 @@ void beginTravel(int location)
   s = s + potentialSteps;
   s = s + " steps to get to ";
   s = s + locationName(location);
-  s = s + ". Is this okay?";
+  s = s + ". You will also lose any current quest progress. Is this okay?";
   boolean ans = createYesNoPopup(s);
 
   if (ans)
   {
 //    if (flag)
 //    {
-//      curLocation = travelLocation;
+//      p.location = travelLocation;
 //    }
+    recallShop();
     travelLocation = location;
     travelSteps = potentialSteps;
-    player_location = -1;
+    //p.location = -1;
     left = true;
 //    fractionTravelSteps = (int)(travelSteps/8);
     totalTravelSteps = 0;
@@ -182,7 +185,7 @@ void checkMapLocation(int x, int y)
             return;
           }
         }
-        else if (i == curLocation)
+        else if (i == p.location)
         {
           screen = TOWNMENU; // assumes 3 is the local location screen, may change
           return;    

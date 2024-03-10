@@ -132,10 +132,10 @@ void completeQuest()
   checkForLevelUp();
 
   // provide new quest if applicable
-  if (t.quests_per_12hr > 0)
+  if (p.questRerolls[t.location] > 0)
   {
     t.curQuests[quest_selected-1] = createQuest(p.level, p.location);
-    t.quests_per_12hr--;
+    p.questRerolls[t.location]--;
   }
   else if (t.curQuests[quest_selected-1].valid) // make the quest invalid
   {
@@ -166,6 +166,28 @@ void jumpingJacks(sensors_event_t a)
       completeQuest();
     }
   }
+
+//  if (amp >= jumpThresholdMax)
+//  {
+//    cyclesJump = 0;
+//    jumpFlag = true;
+//  }
+//  
+//  if (jumpFlag && cyclesJump >= 100) // 2 second since the max value reached
+//  {
+//    jumpFlag = false;
+//  }
+//  else if (jumpFlag && amp <= jumpThresholdMin) // record a jumping jack
+//  {
+//    t.curQuests[quest_selected-1].progress++;
+//    jumpFlag = false;
+//
+//    if (t.curQuests[quest_selected-1].progress >= t.curQuests[quest_selected-1].requirement)
+//    {
+//      jackTaskActive = false;
+//      completeQuest();
+//    }
+//  }
   cyclesJump++;
 }
 
@@ -264,7 +286,6 @@ void invalidateQuest()
   t.curQuests[quest_selected-1].requirement = 0;
 }
  
-// Need to add a popup before delete
 void checkQuestLocation(int x, int y)
 {
   for (int i = 0; i < 4; i++)
@@ -350,16 +371,16 @@ void checkQuestLocation(int x, int y)
             if (i == 0) // trash button
             {
               String s = "Are you sure you want to delete this quest? You will have ";
-              s = s + (t.quests_per_12hr-1);
+              s = s + (p.questRerolls[t.location]-1);
               s = s + " quests left. (Quests reset at 12:00)";
               boolean ans = createYesNoPopup(s); 
 
               if (ans)
               {
-                if (t.quests_per_12hr > 0)
+                if (p.questRerolls[t.location] > 0)
                 {
                   t.curQuests[quest_selected-1] = createQuest(p.level, p.location);
-                  t.quests_per_12hr--;
+                  p.questRerolls[t.location]--;
                 }
                 else if (t.curQuests[quest_selected-1].valid) // make the quest invalid
                 {
@@ -389,16 +410,16 @@ void checkQuestLocation(int x, int y)
             if (i == 0) // trash button
             {
               String s = "Are you sure you want to delete this quest? You will have ";
-              s = s + (t.quests_per_12hr-1);
+              s = s + (p.questRerolls[t.location]-1);
               s = s + " quests left. (Quests reset at 12:00)";
               boolean ans = createYesNoPopup(s); 
 
               if (ans)
               {
-                if (t.quests_per_12hr > 0)
+                if (p.questRerolls[t.location] > 0)
                 {
                   t.curQuests[quest_selected-1] = createQuest(p.level, p.location);
-                  t.quests_per_12hr--;
+                  p.questRerolls[t.location]--;
                 }
                 else if (t.curQuests[quest_selected-1].valid) // make the quest invalid
                 {
@@ -428,16 +449,16 @@ void checkQuestLocation(int x, int y)
             if (i == 0) // trash button
             {
               String s = "Are you sure you want to delete this quest? You will have ";
-              s = s + (t.quests_per_12hr-1);
+              s = s + (p.questRerolls[t.location]-1);
               s = s + " quests left. (Quests reset at 12:00)";
               boolean ans = createYesNoPopup(s); 
 
               if (ans)
               {
-                if (t.quests_per_12hr > 0)
+                if (p.questRerolls[t.location] > 0)
                 {
                   t.curQuests[quest_selected-1] = createQuest(p.level, p.location);
-                  t.quests_per_12hr--;
+                  p.questRerolls[t.location]--;
                 }
                 else if (t.curQuests[quest_selected-1].valid) // make the quest invalid
                 {

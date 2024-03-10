@@ -23,6 +23,15 @@ typedef struct Location{
   // possibly add pointer to appropriate town/dungeon here
 }Location;
 
+typedef struct Item{
+  String itemName;
+  int type; // 0 = weapon, 1 = headpiece, 2 = chestpiece
+  int level; // if weapon then power level, if armor then armor level
+  int price;
+  boolean obtainable; // true if still available
+  int place; // position in the shop array
+}Item;
+
 typedef struct Quest{
   String desc1; // description for user
   String desc2;
@@ -37,9 +46,9 @@ typedef struct Quest{
  }Quest;
 
 typedef struct Town{
-  int quests_per_12hr;
-  int items_per_12hr;
+  int location;
   Quest curQuests[3];
+  Item shopItems[3];
 }Town;
 
 typedef struct Player{
@@ -48,6 +57,12 @@ typedef struct Player{
   int gold;
   int xp;
   int xpToNextLvl;
+  int itemLevels[3]; // keeps max stat for each item the player can hold
+  Item items[3]; // keeps the best item player has stored for viewing
+  int questRerolls[3]; // keeps amount of rerolls per 12 hr stored to avoid abuse
+  int itemRerolls[3]; // keeps amount of rerolls per 12 hr stored to avoid abuse
+  boolean shopItemsRem[3]; // keeps track of whether the shop state is stored
+  Item shopItems[3][3]; // keeps track of current state of shop, set when town is setup and updated when leaving town
 }Player;
 
 #endif

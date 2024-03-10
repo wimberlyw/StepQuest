@@ -4,4 +4,6 @@
 
 void checkForLevelUp();
 
+Player setupPlayer();
+
 #endif
