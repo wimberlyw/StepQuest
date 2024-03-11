@@ -383,6 +383,9 @@ void displayItems()
 
 void recallShop()
 {
+  // no shop to recall
+  if (p.path != -1 || p.location == 2 || p.location == 4) return;
+  
   for (int i = 0; i < 3; i++)
   {
     p.shopItems[t.location][i] = t.shopItems[i];

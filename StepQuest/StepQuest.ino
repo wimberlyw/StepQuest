@@ -17,6 +17,7 @@
 #include "towns.h"
 #include "shops.h"
 #include "timekeeping.h"
+#include "combat.h"
 
 #define I2C_SDA 35
 #define I2C_SCL 36
@@ -77,17 +78,7 @@ enum states {
   DUNGEON,
 };
 
-//enum screen {
-//  HOMESCREEN = 0,
-//  STATUSSCREEN,
-//  WORLDMAP,
-//   SETTINGS,
-//   TOWNMENU,
-//};
-
-
-
-// Steps
+// Steps & Travel
 volatile unsigned int steps = 0;
 ESP32Timer StepTimer(0);
 //hw_timer_t *StepTimer = NULL;
@@ -97,10 +88,7 @@ boolean travelling = false;
 volatile int travelSteps = 0;
 volatile int tempSteps = 0;
 volatile int stepsToNextPath = 0; 
-//volatile int fractionTravelStep = 0;
-//volatile int stepsToChangePos = 0;
-//int travelPath = 0; // which path (0-3)
-//int travelPoint = 0; // which point on that path (0-7)
+volatile int totalTravelSteps = 0;
 
 // enter the drift of the accelerometer (unique to each MPU6050)
 float x_drift = 0.40;
@@ -110,7 +98,7 @@ float z_drift = 10;
 // offsets the gravity and x,y,z drift in order to get an amplitude close to 0 regardless of orientation
 float correction = sqrt(pow((x_drift),2)+pow((y_drift),2)+pow((z_drift),2));
 
-// Shop and Quest items
+// Shop & Quest items
 Town t;
 boolean shopDisplayed = false;
 boolean questDisplayed = false;
@@ -120,6 +108,14 @@ boolean stepTaskActive = false;
 boolean jackTaskActive = false;
 boolean squatTaskActive = false;
 boolean left = false;
+
+// Combat
+int stepsToCombat = 0; // randomly generated number to determine ater how many steps combat occurs
+boolean inCombat = false;
+int wins = 0;
+int totalBattles = 0;
+int goldGained = 0;
+int xpGained = 0;
 
 // Player
 Player p;
@@ -190,28 +186,11 @@ void loop1(void *pvParameters) {
       }
       else
       {
-        //setupDungeon();
+        //setupDungeon(); // William you will have to set this up 
       }
     }
-//    else if (travelling)
-//    {
-//      // check if position on map has moved
-//      if (steps > fractionTravelSteps)
-//      {
-//        if (travelDirection()) // if moving forward
-//        {
-//          
-//        }
-//        else // moving backwards
-//        {
-//          
-//        }
-//        fractionTravelSteps += travelSteps
-//      }
-//    }
      
     // limits for the screen variable
-    
     if (travelling)
     {
       if (screen > SETTINGS) screen = HOMESCREEN;
@@ -237,10 +216,19 @@ void loop1(void *pvParameters) {
       case HOMESCREEN:
       {   
         background.fillScreen(TFT_BLACK);
-        background.setCursor(65, 60, 4);
+        background.setCursor(65, 40, 4);
         background.setTextColor(TFT_RED, TFT_BLACK);
         background.print("Steps: ");
-        background.print(steps);
+        background.println(steps);
+
+        if (travelling)
+        {
+          background.setCursor(45, 60, 4);
+          background.print("Travel: ");
+          background.print(totalTravelSteps - travelSteps);
+          background.print("/");
+          background.println(totalTravelSteps);
+        }
         break;
         
       } // End Case 0
@@ -256,7 +244,7 @@ void loop1(void *pvParameters) {
         background.print("Gold: ");
         background.print(p.gold);
         background.print("XP: ");
-        background.print(p.xp);
+        background.print(p.xp); // Might be a good idea to only display the truncated version of xp since I've changed it to a float
         background.print("ARMOR:");
         background.print((p.itemLevels[0]+p.itemLevels[1]+p.itemLevels[2]));
       
@@ -543,6 +531,23 @@ void loop2(void *pvParameters)
         tempSteps = stepAlg(a);
         steps += tempSteps;
 
+        if (inCombat)
+        {
+          if (stepsToCombat <= 0)
+          {
+            combat();
+          }
+          else
+          {
+            stepsToCombat -= tempSteps;
+          }
+        }
+
+        if (tempSteps != 0)
+        {
+          p.xp += .05; // 1 xp every 20 steps
+        }
+
         if (stepTaskActive) // step task, we are in location, not travelling
         {
           if (t.curQuests[quest_selected-1].progress < t.curQuests[quest_selected-1].requirement)
@@ -609,7 +614,6 @@ void readScreenGesture(){
     gest = touch.gesture();
     // Print to the screen for debug
     Serial.println(gest);
-    //background.println(gest); // I don't think this does anything
 
     // Check if the gesture falls outside of debounce time
     if (millis() - previousMillisScreen < SCREENDEBOUNCE){
@@ -628,9 +632,7 @@ void readScreenGesture(){
     }
     if (gest == "SINGLE CLICK"){
       previousMillisScreen = millis();
-//      Serial.print(touch.data.x);
-//      Serial.print(" ");
-//      Serial.println(touch.data.y);
+
       if (screen == WORLDMAP) // map  screen
       {
         checkMapLocation(touch.data.x, touch.data.y);
@@ -721,9 +723,6 @@ void setup() {
   
   // Screen Setup
   tft.init();
-  //tft.fillScreen(TFT_BLACK);
-  //tft.setSwapBytes(true);
-  //tft.setRotation(1);
   Char.createSprite(96,96);
   background.createSprite(240,240);
   worldmap.createSprite(240,240);

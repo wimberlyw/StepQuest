@@ -55,7 +55,7 @@ typedef struct Player{
   int location;
   int level;
   int gold;
-  int xp;
+  float xp;
   int xpToNextLvl;
   int path; // what path are we on? 0-3, -1 means not travelling
   int itemLevels[3]; // keeps max stat for each item the player can hold
