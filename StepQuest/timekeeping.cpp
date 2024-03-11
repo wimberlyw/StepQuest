@@ -3,12 +3,10 @@
 
   void processOfflineTimekeeping(struct timekeeping *timekeeperPTR){
    // get the previous values from the struct
-   Serial.println("timekeeping");
+   
    bool amConnected = timekeeperPTR->connection;
-   Serial.println(amConnected);
    if(!amConnected)
    {
-    Serial.println("inside");
      unsigned int prevMillisTime = timekeeperPTR->previousMillisTime;
      unsigned int H = timekeeperPTR->_hours;
      unsigned int M = timekeeperPTR->_minutes; 
@@ -18,7 +16,6 @@
       S++;
       //idletime--;
       prevMillisTime = millis();
-      Serial.println(S + " secs");
       }
   
       //time keeping

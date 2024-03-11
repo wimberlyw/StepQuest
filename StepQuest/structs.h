@@ -38,6 +38,7 @@ struct timekeeping{
   unsigned long previousMillisTime;
   char *  _days;
   bool connection;
+  int idleTime;
 };
 
 #endif

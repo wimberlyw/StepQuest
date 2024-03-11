@@ -23,6 +23,7 @@
 #define BUTTONDEBOUNCE 200
 #define ANIMINTERVAL 200
 #define STEP_TIMER_INTERVAL_MS 20
+#define SECOND 1000
 
 Adafruit_MPU6050 mpu;
 
@@ -45,10 +46,14 @@ TFT_eSprite popupText = TFT_eSprite(&tft);
 //TFT_eSprite townMenu = TFT_eSprite(&tft);
 CST816S touch(5, 6, 9, 3);  // sda, scl, rst, irq
 
+// Screen Backlight
+uint8_t blValue;
+
 // Timers
 
 unsigned long previousMillisScreen =0;
 unsigned long previousMillisButton = 0;
+unsigned long previousMillisIdle = 0;
 
 /* struct timekeeping{
   unsigned int _hours;
@@ -75,6 +80,7 @@ String gest = "";
 
 int buttonState1 =0;
 int buttonState2=0;
+bool asleep = false;
 
 enum states {
   TOWN = 0,
@@ -154,6 +160,7 @@ void loop1(void *pvParameters) {
      // Take inputs
      readScreenGesture();
      readButtons();
+     checkIdleTime();
 
      if (travelling && travelSteps == 0)
     {
@@ -211,39 +218,40 @@ void loop1(void *pvParameters) {
     {
       case HOMESCREEN:
       {   
-        background.setColorDepth(8);
-        background.createSprite(240,240);
-        background.setSwapBytes(true);
-        background.fillScreen(TFT_BLACK);
-        background.setCursor(65, 60, 4);
-        background.setTextColor(TFT_RED, TFT_BLACK);
-        background.print("Steps: ");
-        background.print(steps);
-        background.setCursor(62, 100, 4);
-        background.setTextColor(TFT_WHITE, TFT_BLACK);
-        if(timekeeper._hours <10){
-          background.print(" ");
-        }
-        background.print(timekeeper._hours);
-        background.print(":");
-        if (timekeeper._minutes < 10) {
-          background.print('0');
-        }
-        background.print(timekeeper._minutes);
-        background.print(":");
-        //background.setCursor(175, 65, 2);
-        if (timekeeper._seconds < 10) {
-          background.print("0");
-        }
-        background.print(timekeeper._seconds);
-        if(timekeeper.connection == true)
-        {
-           background.setCursor(62, 130, 4);
-           background.println(timekeeper._days);
-        }
+          background.setColorDepth(8);
+          background.createSprite(240,240);
+          background.setSwapBytes(true);
+          background.fillScreen(TFT_BLACK);
+          background.setCursor(65, 60, 4);
+          background.setTextColor(TFT_RED, TFT_BLACK);
+          background.print("Steps: ");
+          background.print(steps);
+          background.setCursor(62, 100, 4);
+          background.setTextColor(TFT_WHITE, TFT_BLACK);
+          if(timekeeper._hours <10){
+            background.print(" ");
+          }
+          background.print(timekeeper._hours);
+          background.print(":");
+          if (timekeeper._minutes < 10) {
+            background.print('0');
+          }
+          background.print(timekeeper._minutes);
+          background.print(":");
+          //background.setCursor(175, 65, 2);
+          if (timekeeper._seconds < 10) {
+            background.print("0");
+          }
+          background.print(timekeeper._seconds);
+          if(timekeeper.connection == true)
+          {
+             background.setCursor(62, 130, 4);
+             background.println(timekeeper._days);
+          }
+        
         break;
         
-      } // End Case 0
+      }// End Case 0
       case STATUSSCREEN:
       {
         background.setColorDepth(8);
@@ -434,13 +442,17 @@ void loop1(void *pvParameters) {
         
       } // End Case 4
      
-    } // end switch(screen)
-  
+    }// end switch(screen)
     // Push Background to screen
     background.pushSprite(0,0);
     background.deleteSprite();
     Char.deleteSprite();
+    
+// Screen sleeping
+  
+    
   } 
+
 } // End loop1()
 
 void loop2(void *pvParameters)
@@ -471,6 +483,10 @@ void loop2(void *pvParameters)
     else{
       updateTimeWifi(timekeeperPtr); 
     }
+    
+
+
+    
   }
 
  
@@ -493,20 +509,81 @@ void readButtons(){
    buttonState2 = digitalRead(button2);
   
 
-  if(buttonState1 == LOW ){
-    screen++;  
-    Serial.println("Button1");
-  }
-  if(buttonState2 == LOW ){
-    screen--;  
-    Serial.println("Button2");
-  }
+    if(buttonState1 == LOW ){
+      Serial.println("Button1");
+
+      timekeeper.idleTime = 12; // reset idle timer
+      
+      //screen++;
+  
+    }
+    if(buttonState2 == LOW ){
+      Serial.println("Button2");
+      timekeeper.idleTime = 12; // reset idle timer
+      //screen--;  
+      
+    }
+    if(buttonState2 == LOW && buttonState1 ==LOW){
+      Serial.println("Both");
+      timekeeper.idleTime = 12; // reset idle timer
+      
+    }
   } 
+}
+
+void checkIdleTime(){
+      
+      
+  if (millis() - previousMillisIdle < SECOND){
+      return;
+    }
+    previousMillisIdle = millis();
+    timekeeper.idleTime--;
+    // fight overflow
+    if( timekeeper.idleTime < -30){
+       timekeeper.idleTime = -1;
+    }
+    
+    Serial.println(timekeeper.idleTime);
+    if(timekeeper.idleTime ==0)
+    {
+      setScreenState(true);
+      asleep = true;
+    }
+    if(timekeeper.idleTime > 10 && asleep)
+    {
+      
+   
+      setScreenState(false);
+      Serial.println("hi");
+      asleep = false;
+    
+    }
+    Serial.println(asleep);
+    
+}
+
+void setScreenState(bool state){
+  Serial.println(state);
+  if(state == true){
+    tft.writecommand(0x10); // screen sleep
+    delay(120);
+    blValue = 0;
+    TFT_SET_BL(&blValue); //  turn screen backlight off
+  }
+  if (state == false){
+    //
+    tft.writecommand(0x11);
+    blValue = 100;
+    TFT_SET_BL(&blValue); //  turn screen backlight off
+  }
 }
 
 void readScreenGesture(){
   // If the screen is in the middle of being touched
   if(touch.available()){ 
+    // if its asleep, wakeup
+   
     //Get the gesture
     gest = touch.gesture();
     // Print to the screen for debug
@@ -517,7 +594,7 @@ void readScreenGesture(){
     if (millis() - previousMillisScreen < SCREENDEBOUNCE){
       return;
     }
-    
+    timekeeper.idleTime = 12; // reset idle timer
     if(gest == "SWIPE LEFT"){ 
       //re-initialize the timing
       previousMillisScreen = millis();
@@ -554,9 +631,10 @@ void readScreenGesture(){
       }
       if (screen == SETTINGS)
       {
-        checkMenuPress(touch.data.x, touch.data.y, &timekeeper);
+        checkMenuPress(touch.data.x, touch.data.y, &timekeeper, &blValue);
       }
     }
+  
   }
 }
 
@@ -676,12 +754,15 @@ void setup() {
   //wifi status
   timekeeper.connection = false;
   timekeeper._days= " ";
+  timekeeper.idleTime = 10;
 
  // connectToWifi(&connection);
   // Multithreading setup
   xTaskCreatePinnedToCore(attachStepTimerInterruptTask, "attachStepTimerInterruptTask", 4096, NULL, 1, NULL, 0);
   xTaskCreatePinnedToCore(loop2, "loop2", 4096, NULL, 1, NULL, 0);
   xTaskCreatePinnedToCore(loop1, "loop1", 4096, NULL, 1, NULL, 1);
+
+  blValue = 100; // backlight level
 
   
 }
