@@ -31,4 +31,14 @@ typedef struct Town{
   Quest curQuests[3];
 }Town;
 
+struct timekeeping{
+  unsigned int _hours;
+  unsigned int _minutes; 
+  unsigned int  _seconds;
+  unsigned long previousMillisTime;
+  char *  _days;
+  bool connection;
+  int idleTime;
+};
+
 #endif
