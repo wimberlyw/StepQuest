@@ -23,7 +23,7 @@ Location begin_but3 = {.x1=200,.x2=240,.y1=150,.y2=190};
 Location questButtons3[2] = {trash3, begin_but3};
 
 extern boolean questDisplayed;
-extern TFT_eSprite worldmap;
+extern TFT_eSprite background;
 extern int quest_selected;
 extern Town t;
 extern Player p;
@@ -482,48 +482,48 @@ void checkQuestLocation(int x, int y)
 
 void displayQuests(Quest quests[])
 {
-  worldmap.setTextColor(TFT_BLACK);
+  background.setTextColor(TFT_BLACK);
   for (int i = 0; i < 3; i++)
   {
     switch(i)
     {
       case(0):
       {
-        worldmap.setCursor(65,55);
-        worldmap.print(quests[i].desc1);
-        worldmap.setCursor(65,65);
-        worldmap.print(quests[i].desc2);
-        worldmap.setCursor(65,75);
-        worldmap.print("Gold: ");
-        worldmap.print(quests[i].gold);
-        worldmap.print(" XP: ");
-        worldmap.print(quests[i].xp);
+        background.setCursor(65,55);
+        background.print(quests[i].desc1);
+        background.setCursor(65,65);
+        background.print(quests[i].desc2);
+        background.setCursor(65,75);
+        background.print("Gold: ");
+        background.print(quests[i].gold);
+        background.print(" XP: ");
+        background.print(quests[i].xp);
         break;
       }
       case(1):
       {
-        worldmap.setCursor(65,105);
-        worldmap.print(quests[i].desc1);
-        worldmap.setCursor(65,115);
-        worldmap.print(quests[i].desc2);
-        worldmap.setCursor(65,125);
-        worldmap.print("Gold: ");
-        worldmap.print(quests[i].gold);
-        worldmap.print(" XP: ");
-        worldmap.print(quests[i].xp);
+        background.setCursor(65,105);
+        background.print(quests[i].desc1);
+        background.setCursor(65,115);
+        background.print(quests[i].desc2);
+        background.setCursor(65,125);
+        background.print("Gold: ");
+        background.print(quests[i].gold);
+        background.print(" XP: ");
+        background.print(quests[i].xp);
         break;
       }
       case(2):
       {
-        worldmap.setCursor(65,155);
-        worldmap.print(quests[i].desc1);
-        worldmap.setCursor(65,165);
-        worldmap.print(quests[i].desc2);
-        worldmap.setCursor(65,175);
-        worldmap.print("Gold: ");
-        worldmap.print(quests[i].gold);
-        worldmap.print(" XP: ");
-        worldmap.print(quests[i].xp);
+        background.setCursor(65,155);
+        background.print(quests[i].desc1);
+        background.setCursor(65,165);
+        background.print(quests[i].desc2);
+        background.setCursor(65,175);
+        background.print("Gold: ");
+        background.print(quests[i].gold);
+        background.print(" XP: ");
+        background.print(quests[i].xp);
         break;
       }
     }

@@ -51,6 +51,7 @@ typedef struct Town{
   Item shopItems[3];
 }Town;
 
+
 typedef struct Player{
   int location;
   int level;
@@ -65,5 +66,15 @@ typedef struct Player{
   boolean shopItemsRem[3]; // keeps track of whether the shop state is stored
   Item shopItems[3][3]; // keeps track of current state of shop, set when town is setup and updated when leaving town
 }Player;
+
+struct timekeeping{
+  unsigned int _hours;
+  unsigned int _minutes; 
+  unsigned int  _seconds;
+  unsigned long previousMillisTime;
+  char *  _days;
+  bool connection;
+  int idleTime;
+};
 
 #endif
