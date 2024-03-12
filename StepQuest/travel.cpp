@@ -1,4 +1,7 @@
 #include "travel.h"
+#include "shops.h"
+#include "popup.h"
+#include "combat.h"
 
 Location Town1 = {.x1=25,.x2=55,.y1=190,.y2=215};
 Location Town2 = {.x1=165,.x2=210,.y1=180,.y2=230};
@@ -7,73 +10,20 @@ Location Town3 = {.x1=0,.x2=55,.y1=95,.y2=130};
 Location Dungeon2 = {.x1=130,.x2=185,.y1=5,.y2=65};
 Location travelLocations[5] = {Town1,Town2,Dungeon1,Town3,Dungeon2};
 
-// Defining yes and no locations for popups
-Location Yes = {.x1=40,.x2=200,.y1=155,.y2=170};
-Location No = {.x1=40,.x2=200,.y1=175,.y2=190};
-
 // Steps between locations (simple for now)
-int locSteps[4] = {50, 100, 150, 200};
+int locSteps[4] = {100, 150, 200, 250};
 //                0-1  1-2  2-3  3-4
 
-// player location based on town/dungeon
-int curLocation = 0;
 int travelLocation = 0; // where player is travelling rn
+boolean travelDirection = false; // false means backwards, true means forwards
 extern volatile int travelSteps; // steps left
-extern volatile int totalTravelSteps; // steps taken
-//extern volatile int fractionTravelSteps; // divides travelSteps into eight sections to display progress on map
+extern volatile int totalTravelSteps; // doesn't change to keep track of overall progress in travel
 extern boolean travelling;
-extern int player_location;
-//extern volatile int stepsToChangePos;
+extern volatile int stepsToNextPath; // tells us how many steps until we reach the next path
+extern Player p;
 
-// external items
-extern TFT_eSprite background;
-extern TFT_eSprite popup;
-extern TFT_eSprite popupText;
-extern CST816S touch;
-extern unsigned long previousMillisScreen;
 extern int screen;
-
-boolean ans;
-
-void writePopupText(String s)
-{
-  popupText.fillScreen(TFT_WHITE);
-  popupText.setCursor(5,5);
-  popupText.setTextColor(TFT_BLACK);
-  popupText.print(s);
-}
-
-boolean checkInteraction() // returns true if popup is answered
-{
-  if(touch.available()){ 
-    // Check if the gesture falls outside of debounce time
-    if (millis() - previousMillisScreen < SCREENDEBOUNCE){
-      return false;
-    }
-    //Get the gesture
-    String gest = touch.gesture();
-    Serial.println(gest);
-  
-    if (gest == "SINGLE CLICK")
-    {
-      previousMillisScreen = millis();
-      int x = touch.data.x;
-      int y = touch.data.y;
-      
-      if (Yes.x1 <= x && Yes.x2 >= x && Yes.y1 <= y && Yes.y2 >= y)
-      {
-        ans = true;
-        return true;
-      }
-      else if (No.x1 <= x && No.x2 >= x && No.y1 <= y && No.y2 >= y)
-      {
-        ans = false;
-        return true;
-      }
-    }
-  }
-  return false;
-}
+extern boolean left; // one time check to set quests inactive when leaving a location
 
 String locationName(int location)
 {
@@ -102,110 +52,153 @@ String locationName(int location)
   } // end switch
 }
 
+void getStepsToNextPath()
+{
+  int ans = 0;
+  if (travelDirection) // forward
+  {
+    if ((p.path+1) > 3) return; // prevent errors
+    p.path++; 
+    ans = travelSteps;
+    for (int i = (p.path+1); i < travelLocation; i++)
+    {
+      ans -= locSteps[i];
+    }
+  }
+  else
+  {
+    if ((p.path-1) < 0) return; // prevent errors
+    p.path--;
+    ans = travelSteps;
+    for (int i = (p.path-1); i >= travelLocation; i++)
+    {
+      ans -= locSteps[i];
+    }
+  }
+  stepsToNextPath = ans;
+}
+
 void finishTravel() // since the screen freezes (including step screen) maybe make it block out the entire background as a notification
 {
+  endCombat();
   travelling = false;
-  curLocation = travelLocation;
-  player_location = travelLocation;
+  p.location = travelLocation;
+  p.path = -1;
   // also need to setup location info like shop items, quest board, etc.
 
   // Might want to implement a way to push a notification that tells the user they finished travel
   // Temporarily though
-  writePopupText("You have arrived at your destination!");
-  popupText.pushToSprite(&background,40,80);
-  background.pushSprite(0,0);
+  String s = "You have arrived at your destination!";
+  
+  createPopup(s);
 
-  while(!touch.available()){}
-
+  battleResults(); // print battle results in popup
 }
-// NEED TO CONSIDER THE PREVIOUS TRAVEL LOCATION TOO WHEN CALCULATING STEPS!
+
+// To be accurate, I need to know what path I'm on at any point. Fix on different branch soon.
 void beginTravel(int location)
 {
   int potentialSteps = 0;
-//  boolean flag = false; // are we changing from a travelling position?
-
+  int potentialStepsToPath = 0;
+  boolean potentialDirection = false;
+  int potentialPath = -1;
+  
   if (travelling)
   {
-    if (travelLocation < location) // we're travelling past where we were before, add new location steps to current ones
+    if (p.path < location) // travelling forward from current location
     {
-      potentialSteps += travelSteps;
+      potentialDirection = true;
+      if (travelDirection) // we were moving forward
+      {
+        potentialSteps += stepsToNextPath;
+      }
+      else // we were moving backwards
+      {
+        potentialSteps += (locSteps[p.path]-stepsToNextPath);
+      }
+      potentialStepsToPath = potentialSteps;
 
-      for (int i = travelLocation; i < location; i++)
+      for (int i = (p.path+1); i < location; i++)
       {
         potentialSteps += locSteps[i];
       }
     }
-    else // we're no longer travelling as far as before, subtract the difference from current steps
+    else // travelling backwards from current location
     {
-      potentialSteps += travelSteps;
-
-      for (int i = location; i < travelLocation; i++)
+      potentialDirection = false;
+      if (travelDirection) // we were moving forward
       {
-        potentialSteps -= locSteps[i];
+        potentialSteps += (locSteps[p.path]-stepsToNextPath);
       }
-    }
-//    flag = true;
-  }
-  else
-  {
-    if (curLocation < location) // moving forward
-    {
-      for (int i = curLocation; i < location; i++)
+      else // we were moving backwards
+      {
+        potentialSteps += stepsToNextPath;
+      }
+      potentialStepsToPath = potentialSteps;
+
+      for (int i = (p.path-1); i >= location; i--)
       {
         potentialSteps += locSteps[i];
       }
     }
-    else // moving backwards
+  }
+  else // we are starting from a location
+  {
+    if (p.location < location) // moving forward on map
     {
-      for (int i = curLocation; i > location; i--)
+      potentialStepsToPath = locSteps[p.location]; // only has steps to finish first path
+      potentialDirection = true;
+      potentialPath = p.location;
+
+      for (int i = p.location; i < location; i++)
       {
-        potentialSteps += locSteps[i-1];
+        potentialSteps += locSteps[i];
+      }
+    }
+    else // moving backwards on map
+    {
+      potentialStepsToPath = locSteps[p.location-1]; // only has steps to finish first path
+      potentialDirection = false;
+      potentialPath = p.location-1;
+
+      for (int i = location; i < p.location; i++)
+      {
+        potentialSteps += locSteps[i];
       }
     }
   }
 
-  if (potentialSteps < 0)
-  {
-    potentialSteps *= -1;
-  }
-  
   String s = "It will take ";
   s = s + potentialSteps;
   s = s + " steps to get to ";
   s = s + locationName(location);
-  s = s + ". Is this okay?";
-  writePopupText(s);
-  popup.pushToSprite(&background,40,80);
-  popupText.pushToSprite(&background,40,80);
-  background.pushSprite(0,0);
-
-  while(!checkInteraction()){} // wait until ppup is answered
+  s = s + ". You will also lose any current quest progress. Is this okay?";
+  boolean ans = createYesNoPopup(s);
 
   if (ans)
   {
-//    if (flag)
-//    {
-//      curLocation = travelLocation;
-//    }
+    recallShop();
+    left = true;
     travelLocation = location;
     travelSteps = potentialSteps;
-    player_location = -1;
-//    fractionTravelSteps = (int)(travelSteps/8);
-    totalTravelSteps = 0;
+    totalTravelSteps = potentialSteps;
+    stepsToNextPath = potentialStepsToPath;
+    travelDirection = potentialDirection;
+    if (potentialPath != -1)
+    {
+      p.path = potentialPath;
+    }
+    if (!travelling)
+    {
+      beginCombat();
+    }
     travelling = true;
-    writePopupText("Travel started! Enjoy your trip!");
-    popupText.pushToSprite(&background,40,80);
-    background.pushSprite(0,0); // need to find way to remove popup (yes,no) from this, need to check what happens at end of travel (does it work).
 
-    while(!touch.available()){}
+    createPopup("Travel started! Enjoy your trip!");
 
     return;
   }
-  writePopupText("Travel cancelled.");
-  popupText.pushToSprite(&background,40,80);
-  background.pushSprite(0,0);
-
-  while(!touch.available()){}
+  createPopup("Travel cancelled.");
 
   return;
 }
@@ -226,29 +219,19 @@ void checkMapLocation(int x, int y)
             String s = "You are currently traveling to that location! You have ";
             s = s + travelSteps;
             s = s + " remaining.";
-            writePopupText(s);
-            popupText.pushToSprite(&background, 40,80);
-            background.pushSprite(0,0);
-
-            while(!touch.available()){}
+            createPopup(s);
 
             return;
           }
           else
           {
             // Do we want to travel there instead? if yes function call
-            popup.pushToSprite(&background,40,80);
             String s = "You are currently travelling to ";
             s = s + locationName(travelLocation);
             s = s + ". Would you rather travel to ";
             s = s + locationName(i);
             s = s + "?";
-
-            writePopupText(s);
-            popupText.pushToSprite(&background,40,80);
-            background.pushSprite(0,0);
-
-            while(!checkInteraction()){} // wait until popup is answered
+            boolean ans = createYesNoPopup(s);
 
             if (ans)
             {
@@ -257,23 +240,18 @@ void checkMapLocation(int x, int y)
             return;
           }
         }
-        else if (i == curLocation)
+        else if (i == p.location)
         {
-          screen = 3; // assumes 3 is the local location screen, may change
+          screen = TOWNMENU; // assumes 3 is the local location screen, may change
           return;    
         }
         else
         {
           // Do you want to travel here? If yes function call
-          popup.pushToSprite(&background, 40, 80);
           String s = "Do you want to travel to ";
           s = s + locationName(i);
           s = s + "?";
-          writePopupText(s);
-          popupText.pushToSprite(&background, 40,80);
-          background.pushSprite(0,0);
-
-          while(!checkInteraction()){} // wait until popup is answered
+          boolean ans = createYesNoPopup(s);
 
           if (ans)
           {

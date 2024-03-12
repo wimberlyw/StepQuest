@@ -6,12 +6,14 @@
 
 #include "structs.h"
 
-Town setupTown(int level, int location);
+void setupTown(int level, int location);
 
 void diplayShopMenu();
 
 void displayQuestMenu();
 
 void checkTownLocation(int x, int y);
+
+void refreshTowns();
 
 #endif
