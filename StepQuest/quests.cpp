@@ -74,6 +74,11 @@ boolean jumpFlag = false;
         desc1 = desc1 + " steps.";
         amp = 1;
         // need to add a mention of time once that is figured out
+
+        // ONLY FOR TEST
+        Quest q_step = {.desc1="Take 50 steps.",.desc2="",.requirement=50,.progress=0,.type=0,.gold=10,.xp=5,.valid=true,.active=false};
+        return q_step;
+        
         break;
       }
       case (1): // squat quest
@@ -91,6 +96,10 @@ boolean jumpFlag = false;
           desc1 = desc1 + " squats.";
         }
         amp = 3;
+
+        // ONLY FOR TESTING
+        Quest q_squat = {.desc1="Complete 10 squats.",.desc2="",.requirement=10,.progress=0,.type=1,.gold=10,.xp=5,.valid=true,.active=false};
+        return q_squat;
 
         break;
       }
@@ -110,7 +119,10 @@ boolean jumpFlag = false;
           desc2 = desc2 + "jacks.";
         }
         
-        amp = 2;    
+        amp = 2;  
+        // ONLY FOR TESTING 
+        Quest q_jump = {.desc1="Complete 10",.desc2=" jumping jacks.",.requirement=10,.progress=0,.type=2,.gold=10,.xp=5,.valid=true,.active=false};
+        return q_jump; 
 
         break;
       }
@@ -482,6 +494,7 @@ void checkQuestLocation(int x, int y)
 
 void displayQuests(Quest quests[])
 {
+  background.setTextSize(1);
   background.setTextColor(TFT_BLACK);
   for (int i = 0; i < 3; i++)
   {

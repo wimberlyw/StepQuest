@@ -170,16 +170,17 @@ void loop1(void *pvParameters) {
       Serial.println(touch.data.y);
     }
     */
-    
+    background.setColorDepth(8);
+    background.createSprite(240,240);
+    background.setSwapBytes(true);
      // Take inputs
-     readScreenGesture();
-     readButtons();
+     
      checkIdleTime();
 
-     if (timkeeperPtr->_hours == 12 && timkeeperPtr->_minutes == 0 && timkeeperPtr->_seconds == 0)
-     {
-       refreshTowns(); // untested since time isn't fully implemented yet
-     }
+//     if (timkeeperPtr->_hours == 12 && timkeeperPtr->_minutes == 0 && timkeeperPtr->_seconds == 0)
+//     {
+//       refreshTowns(); // untested since time isn't fully implemented yet
+//     }
 
      if (left)// you can't do tasks outside of towns/dungeons
      {
@@ -204,23 +205,7 @@ void loop1(void *pvParameters) {
       }
     }
      
-    // limits for the screen variable
-    if (travelling)
-    {
-      if (screen > SETTINGS) screen = HOMESCREEN;
-      if (screen < HOMESCREEN) screen = SETTINGS;
-    }
-    else
-    {
-        if(screen>TOWNMENU)
-        {
-            screen = HOMESCREEN;   
-        }
-        if(screen<HOMESCREEN){
-            screen = TOWNMENU;
-        }
-    } 
-
+    
     //background.fillSprite(TFT_SKYBLUE);
   
     //// *********************** Screen Handling **********************************/
@@ -239,9 +224,7 @@ void loop1(void *pvParameters) {
           background.println(totalTravelSteps);
         }
         
-          background.setColorDepth(8);
-          background.createSprite(240,240);
-          background.setSwapBytes(true);
+          
           background.fillScreen(TFT_BLACK);
           background.setCursor(65, 60, 4);
           background.setTextColor(TFT_RED, TFT_BLACK);
@@ -275,9 +258,6 @@ void loop1(void *pvParameters) {
       }// End Case 0
       case STATUSSCREEN:
       {
-        background.setColorDepth(8);
-        background.createSprite(240,240);
-        background.setSwapBytes(true);
         Char.setColorDepth(8);
         Char.createSprite(96,96);
         Char.setSwapBytes(true);
@@ -311,9 +291,7 @@ void loop1(void *pvParameters) {
       } // End Case 1
       case WORLDMAP: // map screen
       {
-        background.setColorDepth(8);
-        background.createSprite(240,240);
-        background.setSwapBytes(true);
+ 
         background.pushImage(0,0, 240, 240, map1);
 
         if (p.path != -1) // we are travelling
@@ -377,9 +355,7 @@ void loop1(void *pvParameters) {
       } // End Case 2
       case SETTINGS:
       {
-        background.setColorDepth(8);
-        background.createSprite(240,240);
-        background.setSwapBytes(true);
+
         background.fillScreen(TFT_BLACK);
         background.setCursor(60, 40, 4);
         background.setTextColor(TFT_YELLOW, TFT_BLACK);
@@ -405,7 +381,7 @@ void loop1(void *pvParameters) {
       } // End Case 3
       case TOWNMENU: // Also dungeon menu
       {
-
+        background.setTextSize(1);
         background.setColorDepth(8);
         background.createSprite(240,240);
         background.setSwapBytes(true);
@@ -414,6 +390,7 @@ void loop1(void *pvParameters) {
           background.pushImage(0,0, 240, 240, castlecropped);
           if (shopDisplayed)
           {
+            background.setTextSize(1);
             background.fillRoundRect(40,20,160,20,1,TFT_BLUE);
             background.setTextColor(TFT_WHITE);
             //image.setTextSize(2);
@@ -442,6 +419,7 @@ void loop1(void *pvParameters) {
           }
           else if (questDisplayed)
           {
+            background.setTextSize(1);
             background.fillRoundRect(40,20,160,20,1,TFT_BLUE);
             background.setTextColor(TFT_WHITE);
             //background.setTextSize(1);
@@ -451,7 +429,7 @@ void loop1(void *pvParameters) {
             background.setCursor(110,210);
             background.print("Exit");
             background.setCursor(63,30);
-            background.print(t.quests_per_12hr);
+            background.print(p.questRerolls[p.location]);
             background.print(" quests remaining.");
   
             switch(quest_selected)
@@ -465,7 +443,7 @@ void loop1(void *pvParameters) {
               }
               case(1):
               {
-
+                background.setTextSize(1);
                 background.fillRoundRect(60,50,120,40,1,TFT_CYAN);
                 background.drawRoundRect(60,50,120,40,1,TFT_BLACK);
                 background.fillRoundRect(184,50,50,40,1,TFT_GREEN);
@@ -493,6 +471,7 @@ void loop1(void *pvParameters) {
               }
               case(2):
               {
+                background.setTextSize(1);
                 background.fillRoundRect(60,100,120,40,1,TFT_CYAN);
                 background.drawRoundRect(60,100,120,40,1,TFT_BLACK);
                 background.fillRoundRect(184,100,50,40,1,TFT_GREEN);
@@ -520,7 +499,7 @@ void loop1(void *pvParameters) {
               }
               case(3):
               {
-
+                background.setTextSize(1);
                 background.fillRoundRect(60,150,120,40,1,TFT_CYAN);
                 background.drawRoundRect(60,150,120,40,1,TFT_BLACK);
                 background.fillRoundRect(184,150,50,40,1,TFT_GREEN);
@@ -553,6 +532,7 @@ void loop1(void *pvParameters) {
           else
           {
             // create Town menu
+            background.setTextSize(1);
             background.fillRoundRect(40,20,160,20,1,TFT_BLUE);
             background.fillRoundRect(60,60,120,40,1,TFT_WHITE);
             background.fillRoundRect(60,120,120,40,1,TFT_WHITE);
@@ -578,6 +558,26 @@ void loop1(void *pvParameters) {
     }// end switch(screen)
     // Push Background to screen
     background.pushSprite(0,0);
+
+    readScreenGesture();
+    readButtons();
+    // limits for the screen variable
+    if (travelling)
+    {
+      if (screen > SETTINGS) screen = HOMESCREEN;
+      if (screen < HOMESCREEN) screen = SETTINGS;
+    }
+    else
+    {
+        if(screen>TOWNMENU)
+        {
+            screen = HOMESCREEN;   
+        }
+        if(screen<HOMESCREEN){
+            screen = TOWNMENU;
+        }
+    } 
+
     background.deleteSprite();
     Char.deleteSprite();
     
@@ -694,20 +694,20 @@ void readButtons(){
     if(buttonState1 == LOW ){
       Serial.println("Button1");
 
-      timekeeper.idleTime = 12; // reset idle timer
+      timekeeper.idleTime = 300; // reset idle timer
       
-      //screen++;
+      screen++;
   
     }
     if(buttonState2 == LOW ){
       Serial.println("Button2");
-      timekeeper.idleTime = 12; // reset idle timer
-      //screen--;  
+      timekeeper.idleTime = 300; // reset idle timer
+      screen--;  
       
     }
     if(buttonState2 == LOW && buttonState1 ==LOW){
       Serial.println("Both");
-      timekeeper.idleTime = 12; // reset idle timer
+      timekeeper.idleTime = 300; // reset idle timer
       
     }
   } 
@@ -775,7 +775,7 @@ void readScreenGesture(){
     if (millis() - previousMillisScreen < SCREENDEBOUNCE){
       return;
     }
-    timekeeper.idleTime = 12; // reset idle timer
+    timekeeper.idleTime = 300; // reset idle timer
     if(gest == "SWIPE LEFT"){ 
       //re-initialize the timing
       previousMillisScreen = millis();
@@ -921,7 +921,7 @@ void setup() {
   //wifi status
   timekeeper.connection = false;
   timekeeper._days= " ";
-  timekeeper.idleTime = 10;
+  timekeeper.idleTime = 300;
 
   // Multithreading setup
   xTaskCreatePinnedToCore(attachStepTimerInterruptTask, "attachStepTimerInterruptTask", 4096, NULL, 1, NULL, 0);

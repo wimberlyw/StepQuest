@@ -80,7 +80,7 @@ Item s3[30] = {s0_3,s1_3,s2_3,s3_3,s4_3,s5_3,s6_3,s7_3,s8_3,s9_3,s10_3,s11_3,s12
 Item* shop[] = {s1,s2,s3};
 int shop_size[] = {8,17,30};
 
-extern TFT_eSprite worldmap;
+extern TFT_eSprite background;
 extern boolean shopDisplayed;
 extern Town t;
 extern Player p;
@@ -318,63 +318,64 @@ void checkShopLocation(int x, int y)
 
 void displayItems()
 {
-  worldmap.setTextColor(TFT_BLACK);
+  background.setTextSize(1);
+  background.setTextColor(TFT_BLACK);
   for (int i = 0; i < 3; i++)
   {
     switch(i)
     {
       case(0):
       {
-        worldmap.setCursor(65,55);
-        worldmap.print(t.shopItems[i].itemName);
-        worldmap.setCursor(65,75);
-        worldmap.print("Gold: ");
-        worldmap.print(t.shopItems[i].price);
+        background.setCursor(65,55);
+        background.print(t.shopItems[i].itemName);
+        background.setCursor(65,75);
+        background.print("Gold: ");
+        background.print(t.shopItems[i].price);
         if (t.shopItems[i].type == 0)
         {
-          worldmap.print(" Power: ");
+          background.print(" Power: ");
         }
         else
         {
-          worldmap.print(" Armor: ");
+          background.print(" Armor: ");
         }
-        worldmap.print(t.shopItems[i].level);
+        background.print(t.shopItems[i].level);
         break;
       }
       case(1):
       {
-        worldmap.setCursor(65,105);
-        worldmap.print(t.shopItems[i].itemName);
-        worldmap.setCursor(65,125);
-        worldmap.print("Gold: ");
-        worldmap.print(t.shopItems[i].price);
+        background.setCursor(65,105);
+        background.print(t.shopItems[i].itemName);
+        background.setCursor(65,125);
+        background.print("Gold: ");
+        background.print(t.shopItems[i].price);
         if (t.shopItems[i].type == 0)
         {
-          worldmap.print(" Power: ");
+          background.print(" Power: ");
         }
         else
         {
-          worldmap.print(" Armor: ");
+          background.print(" Armor: ");
         }
-        worldmap.print(t.shopItems[i].level);
+        background.print(t.shopItems[i].level);
         break;
       }
       case(2):
       {
-        worldmap.setCursor(65,155);
-        worldmap.print(t.shopItems[i].itemName);
-        worldmap.setCursor(65,175);
-        worldmap.print("Gold: ");
-        worldmap.print(t.shopItems[i].price);
+        background.setCursor(65,155);
+        background.print(t.shopItems[i].itemName);
+        background.setCursor(65,175);
+        background.print("Gold: ");
+        background.print(t.shopItems[i].price);
         if (t.shopItems[i].type == 0)
         {
-          worldmap.print(" Power: ");
+          background.print(" Power: ");
         }
         else
         {
-          worldmap.print(" Armor: ");
+          background.print(" Armor: ");
         }
-        worldmap.print(t.shopItems[i].level);
+        background.print(t.shopItems[i].level);
         break;
       }
     }

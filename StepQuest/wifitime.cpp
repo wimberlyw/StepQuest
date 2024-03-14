@@ -3,8 +3,8 @@
 #include "time.h"
 
 
-const char* ssid       = "belkin.a92";
-const char* password   = "Pepper01";
+const char* ssid       = "UCF_Guest";
+const char* password   = "";
 
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = -18000  ;
