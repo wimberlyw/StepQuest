@@ -502,6 +502,7 @@ void displayQuests(Quest quests[])
     {
       case(0):
       {
+        background.setTextSize(1);
         background.setCursor(65,55);
         background.print(quests[i].desc1);
         background.setCursor(65,65);
@@ -515,6 +516,7 @@ void displayQuests(Quest quests[])
       }
       case(1):
       {
+          background.setTextSize(1);
         background.setCursor(65,105);
         background.print(quests[i].desc1);
         background.setCursor(65,115);
@@ -528,6 +530,7 @@ void displayQuests(Quest quests[])
       }
       case(2):
       {
+          background.setTextSize(1);
         background.setCursor(65,155);
         background.print(quests[i].desc1);
         background.setCursor(65,165);

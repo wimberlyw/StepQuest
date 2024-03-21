@@ -13,6 +13,7 @@ enum screen {
   WORLDMAP,
    SETTINGS,
    TOWNMENU,
+   TIMEMENU
 };
 
 typedef struct Location{
@@ -75,6 +76,8 @@ struct timekeeping{
   char *  _days;
   bool connection;
   int idleTime;
+  // Time Setting Screen
+  bool settingTime;
 };
 
 #endif

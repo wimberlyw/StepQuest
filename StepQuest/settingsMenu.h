@@ -9,4 +9,6 @@ void checkMenuPress(int x, int y, struct timekeeping *timekeeperPTR, uint8_t * b
 
 void TFT_SET_BL(uint8_t * Value);
 
+void drawSetTimeScreen(struct timekeeping *timekeeperPTR);
+
 #endif
