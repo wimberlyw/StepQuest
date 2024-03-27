@@ -177,10 +177,10 @@ void loop1(void *pvParameters) {
      
      checkIdleTime();
 
-//     if (timkeeperPtr->_hours == 12 && timkeeperPtr->_minutes == 0 && timkeeperPtr->_seconds == 0)
-//     {
-//       refreshTowns(); // untested since time isn't fully implemented yet
-//     }
+     if (timekeeper._hours == 12 && timekeeper._minutes == 0 && timekeeper._seconds == 0)
+     {
+       refreshTowns(); // untested since time isn't fully implemented yet
+     }
 
      if (left)// you can't do tasks outside of towns/dungeons
      {
@@ -214,6 +214,8 @@ void loop1(void *pvParameters) {
     {
       case HOMESCREEN:
       {   
+        if (shopDisplayed) shopDisplayed = false;
+        if (questDisplayed) questDisplayed = false;
 
         if (travelling)
         {
@@ -357,7 +359,8 @@ void loop1(void *pvParameters) {
       } // End Case 2
       case SETTINGS:
       {
-
+        if (shopDisplayed) shopDisplayed = false;
+        if (questDisplayed) questDisplayed = false;
         background.fillScreen(TFT_BLACK);
         background.setCursor(60, 40, 4);
         background.setTextColor(TFT_YELLOW, TFT_BLACK);
@@ -390,10 +393,10 @@ void loop1(void *pvParameters) {
       } // End Case 3
       case TOWNMENU: // Also dungeon menu
       {
-        background.setTextSize(1);
-        //background.setColorDepth(8);
-        background.createSprite(240,240);
-        background.setSwapBytes(true);
+//        background.setTextSize(1);
+//        //background.setColorDepth(8);
+//        background.createSprite(240,240);
+//        background.setSwapBytes(true);
          if (p.location == 0 || p.location == 1 || p.location == 3) // we are in a town
         {
           background.pushImage(0,0, 240, 240, castlecropped);
@@ -402,7 +405,6 @@ void loop1(void *pvParameters) {
             background.setTextSize(1);
             background.fillRoundRect(40,20,160,20,1,TFT_BLUE);
             background.setTextColor(TFT_WHITE);
-            //image.setTextSize(2);
             background.setCursor(110,20);
             background.print("Shop");
             background.fillRoundRect(40,200,160,20,1,TFT_RED);

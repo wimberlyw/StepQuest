@@ -54,11 +54,11 @@ void endCombat()
 
 void battleResults()
 {
-  String s = "Battle Results\n Wins: ";
+  String s = "Battle Results         Wins: ";
   s = s + wins; 
   s = s + " Loses: ";
   s = s + (totalBattles-wins);
-  s = s + "\n Gold: ";
+  s = s + "         Gold: ";
   s = s + goldGained;
   s = s + " XP: ";
   s = s + xpGained;

@@ -61,13 +61,34 @@ void checkForTap()
     }
   }
 }
-
+// space is 160 x 60, lets limit to 25 characters per line
 void writePopupText(String s)
 {
+  s = s + " "; // add extra space for the conditions below
+  int start_indent = 5; // the y-coordinate since it changes unlike the x-coordinate
+  int end_segment = 25-1; // last element of the current line
+  int i = 0;
   popupText.fillScreen(TFT_WHITE);
-  popupText.setCursor(5,5);
   popupText.setTextColor(TFT_BLACK);
-  popupText.print(s);
+
+  while (i < s.length())
+  {
+    if (end_segment > s.length()) end_segment = s.length();
+    
+    while (!isSpace(s.charAt(end_segment-1)))
+    {
+      end_segment -= 1;
+    }
+
+    String temp = s.substring(i, end_segment-1); // -1 cuts out the extra space at the end
+    popupText.setCursor(5,start_indent);
+    popupText.print(temp);
+
+    // setup for next line
+    start_indent += 10;
+    i = end_segment;
+    end_segment += 25;
+  }
 }
 
 boolean createYesNoPopup(String s)
@@ -82,7 +103,7 @@ boolean createYesNoPopup(String s)
 
 void createPopup(String s)
 {
-  s = s + "(Tap anywhere to continue)";
+  s = s + " (Tap anywhere to continue)";
   writePopupText(s);
   popupText.pushToSprite(&background,40,80);
   background.pushSprite(0,0);

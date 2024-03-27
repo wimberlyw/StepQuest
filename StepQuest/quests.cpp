@@ -253,11 +253,13 @@ void beginQuest()
     }
     case(1): // squats
     {
+      createPopup("Please note that the device will not count steps while this task is active.");
       squatTaskActive = true;
       break;
     }
     case(2): // jumping jacks
     {
+      createPopup("Please note that the device will not count steps while this task is active.");
       jackTaskActive = true;
       break;
     }
@@ -321,6 +323,7 @@ void checkQuestLocation(int x, int y)
             }
             else if (quest_selected == 1)
             {
+              if (t.curQuests[quest_selected-1].active) stopQuest();
               quest_selected = 0;
             }
             else
@@ -337,6 +340,7 @@ void checkQuestLocation(int x, int y)
             }
             else if (quest_selected == 2)
             {
+              if (t.curQuests[quest_selected-1].active) stopQuest();
               quest_selected = 0;
             }
             else
@@ -353,6 +357,7 @@ void checkQuestLocation(int x, int y)
             }
             else if (quest_selected == 3)
             {
+              if (t.curQuests[quest_selected-1].active) stopQuest();
               quest_selected = 0;
             }
             else
