@@ -382,6 +382,19 @@ void displayItems()
   }
 }
 
+
+Item selectDungeonItem()
+{
+  // pick a random store
+  int sto = random(0, 3); // random from the shop array  
+  
+  // pick a random item
+  int pick = random(shop_size[sto]);
+    
+  return shop[sto][pick];
+}
+
+
 void recallShop()
 {
   // no shop to recall

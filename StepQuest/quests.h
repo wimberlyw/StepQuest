@@ -13,6 +13,8 @@ void checkQuestLocation(int x, int y);
 
 void invalidateQuest();
 
+void stopQuest();
+
 void beginQuest();
 
 void completeQuest();

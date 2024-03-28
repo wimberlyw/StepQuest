@@ -10,6 +10,8 @@ void checkForTap();
 
 void writePopupText(String s);
 
+void createBlankPopup(String s);
+
 boolean createYesNoPopup(String s);
 
 void createPopup(String s);
