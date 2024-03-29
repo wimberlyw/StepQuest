@@ -30,6 +30,7 @@ extern Player p;
 extern boolean stepTaskActive;
 extern boolean squatTaskActive;
 extern boolean jackTaskActive;
+extern boolean questCompleted;
 
 extern float correction;
 
@@ -135,6 +136,14 @@ boolean jumpFlag = false;
     return q;
  }
 
+void completeQuestPopup()
+{
+  String s = "Quest Completed! You now have: Gold " + (String)p.gold;
+  s = s + " XP " + (String)p.xp;
+  
+  createPopup(s);
+}
+
 void completeQuest()
 {
   // pay out reward
@@ -154,6 +163,7 @@ void completeQuest()
     invalidateQuest();
   }
   quest_selected = 0;
+  questCompleted = true;
 }
 
 void jumpingJacks(sensors_event_t a)

@@ -123,6 +123,7 @@ boolean stepTaskActive = false;
 boolean jackTaskActive = false;
 boolean squatTaskActive = false;
 boolean left = false;
+boolean questCompleted = false;
 
 // Combat
 int stepsToCombat = 0; // randomly generated number to determine ater how many steps combat occurs
@@ -203,6 +204,12 @@ void loop1(void *pvParameters) {
       {
         //setupDungeon(); // William you will have to set this up 
       }
+    }
+
+    if (questCompleted)
+    {
+      questCompleted = false;
+      completeQuestPopup();
     }
      
     
@@ -393,10 +400,10 @@ void loop1(void *pvParameters) {
       } // End Case 3
       case TOWNMENU: // Also dungeon menu
       {
-//        background.setTextSize(1);
-//        //background.setColorDepth(8);
-//        background.createSprite(240,240);
-//        background.setSwapBytes(true);
+        background.setTextSize(1);
+        //background.setColorDepth(8);
+        //background.createSprite(240,240);
+        background.setSwapBytes(true);
          if (p.location == 0 || p.location == 1 || p.location == 3) // we are in a town
         {
           background.pushImage(0,0, 240, 240, castlecropped);
