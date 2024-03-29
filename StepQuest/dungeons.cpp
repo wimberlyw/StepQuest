@@ -3,6 +3,7 @@
 #include "popup.h"
 #include "shops.h"
 #include "dungeons.h"
+#include "structs.h"
 
 /*
   Location quest_but = {.x1=50,.x2=180,.y1=80,.y2=120};
@@ -25,31 +26,97 @@ extern Player p;
 
 void setupDungeon(int level, int location, dungeon* D) {
 
-  randomSeed(millis());
-
-  int dungeonFloors = random(1, 6); // random 1 - 5
+  int dungeonFloors = random(1, (5 * level)); // random 1 - 5
 
   D->numDungeonFloors = dungeonFloors;
 
-  int numQuests = random(1, 6); // random 1 - 5 number of quests
-  D->numQuests = numQuests;
-
-  int numItems = dungeonFloors - numQuests;
-  D->numItems = numItems;
-
-
-  for (int i = 0; i < numQuests; i++)
+  int numQuests = 0;
+  int numItems =0;
+  int roll;
+  Serial.print("Floors: ");
+  Serial.println(dungeonFloors);
+    
+  for(int i= 0; i<dungeonFloors; i++)
   {
+    
+    roll = random(3);
+    Serial.print("roll ");
+    Serial.print(roll);
+    switch(roll){
+      case 0 :
+      {
+        D->currQuests[i] = createQuest(random(level, 2*level), location); // Generate a quest at 1 or 2 times the player level
+        Serial.println(" Quest");
+        numQuests++;
+        break;
+      }
+      case 1:
+      {
+      Item it = selectDungeonItem();
+      Serial.println(" Item");
+      String d1 = "";
+      String d2 = "";
+      
+      d1 = it.itemName;
+      String strs[3];
+      int StringCount = 0;  
 
-    D->currQuests[i] = createQuest(random(level, 2), location); // Generate a quest at 1 or 2 times the player level
-
-  }
-  for (int i = numQuests + 1; i < (numQuests + numItems); i++) // Need to do this
-  {
-    D->currItems[i] = selectDungeonItem();
-  }
-
+      //Split the string name because we have long ass item names
+     while (d1.length() > 0)
+      {
+        int index = d1.indexOf(' ');
+        if (index == -1) // No space found
+        {
+          strs[StringCount++] = d1;
+          break;
+        }
+        else
+        {
+          strs[StringCount++] = d1.substring(0, index);
+          d1 = d1.substring(index+1);
+        }
+      }
+      switch(StringCount){
+        case 0:
+        {
+          d1 = strs[0];
+          break;
+        }
+        case 1:
+        {
+          d1 = strs[0] + strs[1];
+          break;
+        }
+       case 3:
+       {
+          d1 = strs[0] + " " + strs[1];
+          d2 = strs[2];
+          break;
+       }
+      }
+      
+      
+      Quest itemQ = {.desc1= d1,.desc2= d2,.requirement=0,.progress=0,.type=4,.gold=0,.xp=0,.valid=true,.active=false};
+      D->currQuests[i] = itemQ;
+      numItems++;  
+      break;
+    }
+   case 2:
+    {
+      Serial.println(" Money");
+      Quest qe = createMoneyQuest(level, location);
+      Serial.println(qe.desc1);
+      Serial.println(qe.desc2);
+      Serial.println(qe.gold);
+      D->currQuests[i] = qe; 
+      break;
+    }
+    } 
+  } // for
+    
   D->currFloor = 0;
+  D->numQuests = numQuests;
+  D->numItems = numItems;
 }
 
 void drawDungeonQuests(dungeon D)
@@ -64,11 +131,13 @@ void drawDungeonQuests(dungeon D)
         background.print(D.currQuests[D.currFloor].desc1);
         background.setCursor(65,115);
         background.print(D.currQuests[D.currFloor].desc2);
+        if(D.currQuests[D.currFloor].type < 3){
         background.setCursor(65,125);
         background.print("Gold: ");
         background.print(D.currQuests[D.currFloor].gold);
         background.print(" XP: ");
         background.print(D.currQuests[D.currFloor].xp);
+        }
 }
 
 

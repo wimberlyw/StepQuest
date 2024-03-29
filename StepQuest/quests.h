@@ -6,6 +6,7 @@
 #include "structs.h"
 
 Quest createQuest(int level, int location);
+Quest createMoneyQuest(int level, int location);
 
 void displayQuests(Quest quests[]);
 

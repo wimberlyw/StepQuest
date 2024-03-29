@@ -4,7 +4,7 @@
 #ifndef DUNGS_H
 #define DUNGS_H
 
-#include "structs.h"
+//#include "structs.h"
 
 void setupDungeon(int level, int location, dungeon* D);
 

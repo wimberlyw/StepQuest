@@ -696,9 +696,9 @@ void loop1(void *pvParameters) {
                 }
                 background.setTextSize(1);
                 background.setCursor(186,130);
-                background.print(D.currQuests[1].progress);
+                background.print(D.currQuests[D.currFloor].progress);
                 background.print("/");
-                background.print(D.currQuests[1].requirement);
+                background.print(D.currQuests[D.currFloor].requirement);
                 break;
               }
                  
@@ -714,7 +714,7 @@ void loop1(void *pvParameters) {
     readScreenGesture();
     readButtons();
   
-    Serial.println(screen);
+
     // limits for the screen variable
     if (travelling)
     {
@@ -1001,7 +1001,7 @@ void setup() {
   pinMode(button2, INPUT_PULLUP);
 
   Serial.begin(115200);
-  
+  randomSeed(analogRead(0));
   // Set up Accelerometer.
   // Program will hang on start if accelermoter not detected.
   I2CMPU.begin(I2C_SDA, I2C_SCL, 100000); 
@@ -1018,47 +1018,47 @@ void setup() {
   // mpu6050 setup
   
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
-  Serial.print("Accelerometer range set to: ");
-  switch (mpu.getAccelerometerRange()) {
-  case MPU6050_RANGE_2_G:
-    Serial.println("+-2G");
-    break;
-  case MPU6050_RANGE_4_G:
-    Serial.println("+-4G");
-    break;
-  case MPU6050_RANGE_8_G:
-    Serial.println("+-8G");
-    break;
-  case MPU6050_RANGE_16_G:
-    Serial.println("+-16G");
-    break;
-  }
+//  Serial.print("Accelerometer range set to: ");
+//  switch (mpu.getAccelerometerRange()) {
+//  case MPU6050_RANGE_2_G:
+//    Serial.println("+-2G");
+//    break;
+//  case MPU6050_RANGE_4_G:
+//    Serial.println("+-4G");
+//    break;
+//  case MPU6050_RANGE_8_G:
+//    Serial.println("+-8G");
+//    break;
+//  case MPU6050_RANGE_16_G:
+//    Serial.println("+-16G");
+//    break;
+//  }
 
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-  Serial.print("Filter bandwidth set to: ");
-  switch (mpu.getFilterBandwidth()) {
-  case MPU6050_BAND_260_HZ:
-    Serial.println("260 Hz");
-    break;
-  case MPU6050_BAND_184_HZ:
-    Serial.println("184 Hz");
-    break;
-  case MPU6050_BAND_94_HZ:
-    Serial.println("94 Hz");
-    break;
-  case MPU6050_BAND_44_HZ:
-    Serial.println("44 Hz");
-    break;
-  case MPU6050_BAND_21_HZ:
-    Serial.println("21 Hz");
-    break;
-  case MPU6050_BAND_10_HZ:
-    Serial.println("10 Hz");
-    break;
-  case MPU6050_BAND_5_HZ:
-    Serial.println("5 Hz");
-    break;
-  }
+//  Serial.print("Filter bandwidth set to: ");
+//  switch (mpu.getFilterBandwidth()) {
+//  case MPU6050_BAND_260_HZ:
+//    Serial.println("260 Hz");
+//    break;
+//  case MPU6050_BAND_184_HZ:
+//    Serial.println("184 Hz");
+//    break;
+//  case MPU6050_BAND_94_HZ:
+//    Serial.println("94 Hz");
+//    break;
+//  case MPU6050_BAND_44_HZ:
+//    Serial.println("44 Hz");
+//    break;
+//  case MPU6050_BAND_21_HZ:
+//    Serial.println("21 Hz");
+//    break;
+//  case MPU6050_BAND_10_HZ:
+//    Serial.println("10 Hz");
+//    break;
+//  case MPU6050_BAND_5_HZ:
+//    Serial.println("5 Hz");
+//    break;
+//  }
   
   // Screen Setup
   tft.init();
@@ -1090,7 +1090,7 @@ void setup() {
     
   p = setupPlayer();
   setupTown(p.level, p.location);
-  setupDungeon(p.level, p.location, &D);
+
 
   // Initialize timekeeping struct
   timekeeper._hours = 1;
@@ -1105,6 +1105,7 @@ void setup() {
   // Time Setting Screen
   timekeeper.settingTime = false;
 
+    setupDungeon(p.level, p.location, &D);
   // Multithreading setup
   xTaskCreatePinnedToCore(attachStepTimerInterruptTask, "attachStepTimerInterruptTask", 4096, NULL, 1, NULL, 0);
   xTaskCreatePinnedToCore(loop2, "loop2", 8000, NULL, 1, NULL, 0);

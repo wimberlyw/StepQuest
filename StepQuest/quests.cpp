@@ -54,9 +54,27 @@ boolean jumpFlag = false;
  // type 3 = "walk for x time"
  String quest_name_3 = "Patrol Quest";
 
+// Create a Quest that just gives money
+Quest createMoneyQuest(int level, int location)
+ {
+    String desc1 = "";
+    String desc2 = "";
+    int gold = random(1,level *100) + random(1,location * 100);
+    desc1 =  "You've found " + String(gold);
+    desc2 =  "gold";
+    // int xP = random(level) + random(location);
+    
+    Quest money = {.desc1= desc1,.desc2= desc2,.requirement=0,.progress=0,.type=3,.gold=gold,.xp=0,.valid=true,.active=false};
+    return money;
+ }
+  
+ 
+ 
  // creates a randomized quest based on the player level and location (Currently does not create patrol tasks)
  Quest createQuest(int level, int location)
  {
+
+ 
     int type = random(3); // generate number between 0 and 2 
     String desc1 = "";
     String desc2 = "";
