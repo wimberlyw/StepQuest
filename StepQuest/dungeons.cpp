@@ -10,12 +10,15 @@
   Location shop_but = {.x1=50,.x2=180,.y1=130,.y2=170};
   Location townLocations[2] = {quest_but,shop_but};
 */
+extern boolean stepTaskActive;
+extern boolean squatTaskActive;
+extern boolean jackTaskActive;
 extern TFT_eSprite background;
 Location Dquest_1 = {.x1=50,.x2=180,.y1=120,.y2=140};
 Location Dexit_but = {.x1=30,.x2=180,.y1=200,.y2=240};
 Location dLocations[2] = {Dexit_but,Dquest_1};
 
-Location dQuestButtons = {.x1=200,.x2=240,.y1=110,.y2=140};
+Location dQuestButtons = {.x1=130,.x2=240,.y1=110,.y2=140};
 
 
 
@@ -25,10 +28,11 @@ extern Player p;
 
 
 void setupDungeon(int level, int location, dungeon* D) {
-
+  Serial.println(p.currStatus);
   int dungeonFloors = random(1, (5 * level)); // random 1 - 5
 
   D->numDungeonFloors = dungeonFloors;
+  D->defeated = false;
 
   int numQuests = 0;
   int numItems =0;
@@ -52,7 +56,8 @@ void setupDungeon(int level, int location, dungeon* D) {
       }
       case 1:
       {
-      Item it = selectDungeonItem();
+      Item it = selectDungeonItem(level);
+      D->currItems[i] = it;
       Serial.println(" Item");
       String d1 = "";
       String d2 = "";
@@ -126,11 +131,22 @@ void drawDungeonQuests(dungeon D)
         background.setCursor(65,75);
         background.print("Current Floor: ");
         background.print(D.currFloor);
-         background.setTextColor(TFT_BLACK);
-        background.setCursor(65,105);
-        background.print(D.currQuests[D.currFloor].desc1);
-        background.setCursor(65,115);
-        background.print(D.currQuests[D.currFloor].desc2);
+        background.setTextColor(TFT_BLACK);
+        if(D.currQuests[D.currFloor].type == 4){
+            background.setCursor(65,105); 
+            background.print("You've found a ");
+            background.setCursor(65,115);
+            background.print(D.currQuests[D.currFloor].desc1);
+            background.setCursor(65,125);
+            background.print(D.currQuests[D.currFloor].desc2);    
+        }
+        else{
+          background.setCursor(65,105);
+          background.print(D.currQuests[D.currFloor].desc1);
+          background.setCursor(65,115);
+          background.print(D.currQuests[D.currFloor].desc2);  
+        }
+        
         if(D.currQuests[D.currFloor].type < 3){
         background.setCursor(65,125);
         background.print("Gold: ");
@@ -171,24 +187,100 @@ void checkDungeonClick(int x, int y, dungeon* D) // figures out what button has 
             break;
           } 
         }
-
+        
         switch(D->dungeon_quest_selected)
         {
-          case 0:{break;}
+          //case 0:{break;}
           case 1:
           {
-            
- 
-            if (dQuestButtons.x1 <= x && dQuestButtons.x2 >= x)
-            {
-              if (dQuestButtons.y1 <= y && dQuestButtons.y2 >= y)
-              {
-                  if (D->currQuests[D->currFloor].active) stopQuest();
-                  else beginQuest();
-              }
+            Serial.print(x);
+            Serial.print(" ");
+            Serial.print(y);
+            if(D->currQuests[D->currFloor].type > 2){
+                 switch(D->currQuests[D->currFloor].type)
+                 {
+                  case 3: // money
+                        {
+                            Serial.println("in Money");
+                            p.gold += D->currQuests[D->currFloor].gold;
+                            p.xp += D->currQuests[D->currFloor].xp;
+                            String s = "";
+                            s = "You took the gold ";
+                            createPopup(s);
+                            D->currFloor++;
+                            if(D->currFloor +1 > D->numDungeonFloors)
+                              { D->defeated = true;}
+                            D->dungeon_quest_selected = 0;
+                            break;
+                            
+                        }
+                  case 4: // item
+                        {
+                           Serial.println("items");
+                          Item theItem = D->currItems[D->currFloor];
+                          int prev_level;
+                          String s = "";
+                          prev_level = p.itemLevels[theItem.type];
+                          if (p.itemLevels[theItem.type] <= theItem.level)
+                                
+                          {
+                                  s = "You have replaced " + p.items[theItem.type].itemName + " with " + theItem.itemName + ". ";
+                                  p.itemLevels[theItem.type] = theItem.level;
+                                  p.items[theItem.type] = theItem;
+                                
+                          
+                                s = s + "You have gained " + (p.itemLevels[theItem.type]-prev_level) + (theItem.type==0? " power." : " armor.");
+                                createPopup(s);
+                          }
+                          else {
+                             s = "You threw the item away";
+                                createPopup(s);
+                          }
+                          D->currFloor++;
+                            if(D->currFloor +1 > D->numDungeonFloors)
+                              { D->defeated = true;}
+                          
+                          D->dungeon_quest_selected = 0;
+                          break; 
+                       }
+                }
+                Serial.println("floor" + D->currFloor +1);
             }
+            
+            else{
+              if (dQuestButtons.x1 <= x && dQuestButtons.x2 >= x) 
+                {
+                if (dQuestButtons.y1 <= y && dQuestButtons.y2 >= y)
+                  {
+                    D->currQuests[D->currFloor].active = true;
+                    // what type of quest are we completing?
+                    Serial.println(D->currQuests[D->currFloor].active);
+                    switch(D->currQuests[D->currFloor].type)
+                      {
+                        case (0): // walking, simplest case
+                        {
+                          stepTaskActive = true;
+                          beginQuest();
+                          break;
+                        }
+                        case(1): // squats
+                        {
+                          squatTaskActive = true;
+                          beginQuest();
+                          break;
+                        }
+                        case(2): // jumping jacks
+                        {
+                          jackTaskActive = true;
+                          beginQuest();
+                          break;
+                        }
+
+                      }
+                    }
+                  }
+                }// else type 0 - 2)
           
-          break;
           }// end case1
         }// end switch dungeon_quest_selected
           

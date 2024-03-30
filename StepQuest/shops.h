@@ -12,7 +12,7 @@ void checkShopLocation(int x, int y);
 
 void displayItems();
 
-Item selectDungeonItem();
+Item selectDungeonItem(int level);
 
 
 void recallShop();

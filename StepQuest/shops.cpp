@@ -383,10 +383,10 @@ void displayItems()
 }
 
 
-Item selectDungeonItem()
+Item selectDungeonItem(int level)
 {
   // pick a random store
-  int sto = random(0, 3); // random from the shop array  
+  int sto = random(0, level); // random from the shop array  
   
   // pick a random item
   int pick = random(shop_size[sto]);

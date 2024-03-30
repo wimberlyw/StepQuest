@@ -71,6 +71,7 @@ typedef struct dungeon{
   Quest currQuests[5];
   Item currItems[5];
   int dungeon_quest_selected;
+  bool defeated;
 }dungeon;
 
 

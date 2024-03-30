@@ -669,6 +669,7 @@ void loop1(void *pvParameters) {
       {
         background.pushImage(0,0, 240, 240, dungeoncropped);  
         background.setTextSize(1);
+        if(!D.defeated){
         background.fillRoundRect(60,100,120,40,1,TFT_WHITE);
         switch(D.dungeon_quest_selected)
         {
@@ -679,12 +680,14 @@ void loop1(void *pvParameters) {
           }
           case 1:
           {
-            background.fillRoundRect(60,100,120,40,1,TFT_CYAN);
-            background.drawRoundRect(60,100,120,40,1,TFT_BLACK);
-            background.fillRoundRect(184,100,50,40,1,TFT_GREEN);
+            if(D.currQuests[D.currFloor].type<3){
             
-             background.setTextColor(TFT_BLACK);
-                if (D.currQuests[quest_selected-1].active)
+              background.fillRoundRect(60,100,120,40,1,TFT_CYAN);
+              background.drawRoundRect(60,100,120,40,1,TFT_BLACK);
+              background.fillRoundRect(184,100,50,40,1,TFT_GREEN);
+              
+               background.setTextColor(TFT_BLACK);
+                if (D.currQuests[D.currFloor].active)
                 {
                   background.setCursor(186,105);
                   background.print("Active");
@@ -701,12 +704,32 @@ void loop1(void *pvParameters) {
                 background.print(D.currQuests[D.currFloor].requirement);
                 break;
               }
-                 
+              else{
+                    background.fillRoundRect(50,100,120,40,1,TFT_CYAN);
+                    background.drawRoundRect(50,100,120,40,1,TFT_BLACK);
+                    // Bigger box for item names. 
+                    if(D.currQuests[D.currFloor].type==4){  
+                      background.fillRoundRect(60,100,120,80,1,TFT_CYAN);
+                      background.drawRoundRect(60,100,120,80,1,TFT_BLACK);
+                    }
+                    
+                }
           }
-        
-
-        drawDungeonQuests(D);
-       break;
+          
+        }
+       drawDungeonQuests(D);
+       //break;         
+        }// end if!d.defeated
+        else{ // if dungeon defeated
+          background.fillRoundRect(50,100,137,40,1,TFT_WHITE);
+          background.setTextColor(TFT_RED);
+          background.setCursor(55, 100, 2);
+          background.print("Dungeon will ");
+          background.setCursor(55, 120, 2);
+          background.print("Re-Open In 12 Hours");
+          
+        }
+        break;
       }// case Dungeon
     }// end switch(screen)
     // Push Background to screen
@@ -1089,6 +1112,7 @@ void setup() {
   Serial.println(touch.data.versionInfo[2]);
     
   p = setupPlayer();
+  p.currStatus = INDUNGEON;
   setupTown(p.level, p.location);
 
 

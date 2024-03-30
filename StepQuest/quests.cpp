@@ -155,22 +155,22 @@ Quest createMoneyQuest(int level, int location)
 
 void completeQuest()
 {
-  // pay out reward
-  p.gold += t.curQuests[quest_selected-1].gold;
-  p.xp += t.curQuests[quest_selected-1].xp;
+      // pay out reward
+    p.gold += t.curQuests[quest_selected-1].gold;
+    p.xp += t.curQuests[quest_selected-1].xp;
+    checkForLevelUp();
+  
+    // provide new quest if applicable
+    if (p.questRerolls[t.location] > 0)
+    {
+      t.curQuests[quest_selected-1] = createQuest(p.level, p.location);
+      p.questRerolls[t.location]--;
+    }
+    else if (t.curQuests[quest_selected-1].valid) // make the quest invalid
+    {
+      invalidateQuest();
+    }
 
-  checkForLevelUp();
-
-  // provide new quest if applicable
-  if (p.questRerolls[t.location] > 0)
-  {
-    t.curQuests[quest_selected-1] = createQuest(p.level, p.location);
-    p.questRerolls[t.location]--;
-  }
-  else if (t.curQuests[quest_selected-1].valid) // make the quest invalid
-  {
-    invalidateQuest();
-  }
   quest_selected = 0;
 }
 
@@ -256,12 +256,13 @@ void squats(sensors_event_t a)
 
 void beginQuest()
 {
+  
   if (!t.curQuests[quest_selected-1].valid)
   {
     return;
   }
   t.curQuests[quest_selected-1].active = true;
-  // what type of quest are we completing?
+    // what type of quest are we completing?
   switch(t.curQuests[quest_selected-1].type)
   {
     case (0): // walking, simplest case
@@ -280,6 +281,7 @@ void beginQuest()
       break;
     }
   }
+
 }
 
 void stopQuest()
