@@ -18,7 +18,7 @@ Location Dquest_1 = {.x1=50,.x2=180,.y1=120,.y2=140};
 Location Dexit_but = {.x1=30,.x2=180,.y1=200,.y2=240};
 Location dLocations[2] = {Dexit_but,Dquest_1};
 
-Location dQuestButtons = {.x1=130,.x2=240,.y1=110,.y2=140};
+Location dQuestButtons = {.x1=170,.x2=240,.y1=110,.y2=210};
 
 
 
@@ -130,7 +130,9 @@ void drawDungeonQuests(dungeon D)
         background.setTextColor(TFT_WHITE);
         background.setCursor(65,75);
         background.print("Current Floor: ");
-        background.print(D.currFloor);
+        background.print(D.currFloor + 1);
+        background.print("/");
+        background.print(D.numDungeonFloors); 
         background.setTextColor(TFT_BLACK);
         if(D.currQuests[D.currFloor].type == 4){
             background.setCursor(65,105); 
@@ -182,20 +184,22 @@ void checkDungeonClick(int x, int y, dungeon* D) // figures out what button has 
             }
             else if( D->dungeon_quest_selected == 1){
                D->dungeon_quest_selected = 0;
+
             }
            
             break;
-          } 
-        }
+           } 
+          }
+      }
+    }
+    }
         
         switch(D->dungeon_quest_selected)
         {
-          //case 0:{break;}
+          case 0:{break;}
           case 1:
           {
-            Serial.print(x);
-            Serial.print(" ");
-            Serial.print(y);
+            
             if(D->currQuests[D->currFloor].type > 2){
                  switch(D->currQuests[D->currFloor].type)
                  {
@@ -252,40 +256,47 @@ void checkDungeonClick(int x, int y, dungeon* D) // figures out what button has 
                 {
                 if (dQuestButtons.y1 <= y && dQuestButtons.y2 >= y)
                   {
-                    D->currQuests[D->currFloor].active = true;
-                    // what type of quest are we completing?
-                    Serial.println(D->currQuests[D->currFloor].active);
-                    switch(D->currQuests[D->currFloor].type)
-                      {
-                        case (0): // walking, simplest case
-                        {
-                          stepTaskActive = true;
-                          beginQuest();
+                    if(D->currQuests[D->currFloor].active == true){
+                          D->currQuests[D->currFloor].active = false;
+                           stepTaskActive = false;
+                           squatTaskActive = false;
+                           jackTaskActive = false;
                           break;
-                        }
-                        case(1): // squats
-                        {
-                          squatTaskActive = true;
-                          beginQuest();
-                          break;
-                        }
-                        case(2): // jumping jacks
-                        {
-                          jackTaskActive = true;
-                          beginQuest();
-                          break;
-                        }
-
-                      }
                     }
+                    else{
+                      
+                      D->currQuests[D->currFloor].active = true;
+                      // what type of quest are we completing?
+                      switch(D->currQuests[D->currFloor].type)
+                        {
+                          case (0): // walking, simplest case
+                          {
+                            //D->currQuests[D->currFloor].active = true;
+                            
+                            stepTaskActive = true;
+                            
+                            break;
+                          }
+                          case(1): // squats
+                          {
+                            //D->currQuests[D->currFloor].active = true;
+                            squatTaskActive = true;
+                            
+                            break;
+                          }
+                          case(2): // jumping jacks
+                          {
+                            //D->currQuests[D->currFloor].active = true;
+                            jackTaskActive = true;
+                            break;
+                          }
+  
+                        }// send switch currfloor.type
+                    }// end else currentquest active
                   }
+                }
                 }// else type 0 - 2)
-          
           }// end case1
         }// end switch dungeon_quest_selected
-          
-        }// end 
-      }
-    }
   
 }

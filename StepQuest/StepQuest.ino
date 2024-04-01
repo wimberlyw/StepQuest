@@ -670,7 +670,8 @@ void loop1(void *pvParameters) {
         background.pushImage(0,0, 240, 240, dungeoncropped);  
         background.setTextSize(1);
         if(!D.defeated){
-        background.fillRoundRect(60,100,120,40,1,TFT_WHITE);
+          
+          background.fillRoundRect(60,100,120,40,1,TFT_WHITE);
         switch(D.dungeon_quest_selected)
         {
           case 0:
@@ -680,7 +681,7 @@ void loop1(void *pvParameters) {
           }
           case 1:
           {
-            if(D.currQuests[D.currFloor].type<3){
+            
             
               background.fillRoundRect(60,100,120,40,1,TFT_CYAN);
               background.drawRoundRect(60,100,120,40,1,TFT_BLACK);
@@ -704,19 +705,8 @@ void loop1(void *pvParameters) {
                 background.print(D.currQuests[D.currFloor].requirement);
                 break;
               }
-              else{
-                    background.fillRoundRect(50,100,120,40,1,TFT_CYAN);
-                    background.drawRoundRect(50,100,120,40,1,TFT_BLACK);
-                    // Bigger box for item names. 
-                    if(D.currQuests[D.currFloor].type==4){  
-                      background.fillRoundRect(60,100,120,80,1,TFT_CYAN);
-                      background.drawRoundRect(60,100,120,80,1,TFT_BLACK);
-                    }
-                    
-                }
           }
-          
-        }
+
        drawDungeonQuests(D);
        //break;         
         }// end if!d.defeated
