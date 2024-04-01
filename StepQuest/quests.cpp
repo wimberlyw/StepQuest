@@ -1,6 +1,7 @@
 #include "quests.h"
 #include "player.h"
 #include "popup.h"
+#include "dungeons.h"
 
 /*TODO Jumping jacks need some more testing, squats and step tasks seem to work*/
 
@@ -27,6 +28,7 @@ extern TFT_eSprite background;
 extern int quest_selected;
 extern Town t;
 extern Player p;
+extern dungeon D;
 extern boolean stepTaskActive;
 extern boolean squatTaskActive;
 extern boolean jackTaskActive;
@@ -159,7 +161,7 @@ void completeQuest()
     p.gold += t.curQuests[quest_selected-1].gold;
     p.xp += t.curQuests[quest_selected-1].xp;
     checkForLevelUp();
-
+    
     if(p.currStatus != INDUNGEON){
       
       // provide new quest if applicable
@@ -172,8 +174,16 @@ void completeQuest()
       {
         invalidateQuest();
       }
+     quest_selected = 0;
     }
-  quest_selected = 0;
+    else{ // if in dungeon
+      D.currQuests[D.currFloor].active = false;
+      D.currFloor++;
+      if(D.currFloor +1 > D.numDungeonFloors)
+        { D.defeated = true;}
+        D.dungeon_quest_selected = 0;
+    }
+
 }
 
 void jumpingJacks(sensors_event_t a)
@@ -189,14 +199,26 @@ void jumpingJacks(sensors_event_t a)
 
   if (amp >= jumpThresholdMax && cyclesJump >= 50) // more than a half second has passed since last jumping jack
   {
-    t.curQuests[quest_selected-1].progress++;
-    cyclesJump = 0;
-
-    if (t.curQuests[quest_selected-1].progress >= t.curQuests[quest_selected-1].requirement)
-    {
-      jackTaskActive = false;
-      completeQuest();
-    }
+     if(p.currStatus != INDUNGEON){
+      t.curQuests[quest_selected-1].progress++;
+      cyclesJump = 0;
+  
+      if (t.curQuests[quest_selected-1].progress >= t.curQuests[quest_selected-1].requirement)
+      {
+        jackTaskActive = false;
+        completeQuest();
+      }
+     }
+     else{ // in a dungeon
+      D.currQuests[D.currFloor].progress++;
+      cyclesJump = 0;
+  
+      if (D.currQuests[D.currFloor].progress >= D.currQuests[D.currFloor].requirement)
+      {
+        jackTaskActive = false;
+        completeQuest();
+      }
+     }
   }
 
 //  if (amp >= jumpThresholdMax)
@@ -244,13 +266,25 @@ void squats(sensors_event_t a)
   }
   else if (squatFlag && amp >= squatThresholdMax) // record a squat
   {
-    t.curQuests[quest_selected-1].progress++;
-    squatFlag = false;
+    if(p.currStatus != INDUNGEON){
+      t.curQuests[quest_selected-1].progress++;
+      squatFlag = false;
 
-    if (t.curQuests[quest_selected-1].progress >= t.curQuests[quest_selected-1].requirement)
-    {
-      squatTaskActive = false;
-      completeQuest();
+      if (t.curQuests[quest_selected-1].progress >= t.curQuests[quest_selected-1].requirement)
+      {
+        squatTaskActive = false;
+        completeQuest();
+      }
+    }
+    else{ // in a dungeon
+          D.currQuests[D.currFloor].progress++;
+          squatFlag = false;
+
+          if (D.currQuests[D.currFloor].progress >= D.currQuests[D.currFloor].requirement)
+            {
+              squatTaskActive = false;
+              completeQuest();
+            }
     }
   }
   cyclesSquat++;

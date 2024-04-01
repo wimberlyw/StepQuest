@@ -271,7 +271,6 @@ void checkDungeonClick(int x, int y, dungeon* D) // figures out what button has 
                         {
                           case (0): // walking, simplest case
                           {
-                            //D->currQuests[D->currFloor].active = true;
                             
                             stepTaskActive = true;
                             
@@ -279,14 +278,12 @@ void checkDungeonClick(int x, int y, dungeon* D) // figures out what button has 
                           }
                           case(1): // squats
                           {
-                            //D->currQuests[D->currFloor].active = true;
                             squatTaskActive = true;
                             
                             break;
                           }
                           case(2): // jumping jacks
                           {
-                            //D->currQuests[D->currFloor].active = true;
                             jackTaskActive = true;
                             break;
                           }

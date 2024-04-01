@@ -821,16 +821,28 @@ void loop2(void *pvParameters)
 
         if (stepTaskActive) // step task, we are in location, not travelling
         {
-          if (t.curQuests[quest_selected-1].progress < t.curQuests[quest_selected-1].requirement)
-          {
-            t.curQuests[quest_selected-1].progress += tempSteps;
-          }
-          else
-          {
-            stepTaskActive = false;
-            completeQuest();
-          }
-        }
+          if(p.currStatus != INDUNGEON)
+            if (t.curQuests[quest_selected-1].progress < t.curQuests[quest_selected-1].requirement)
+            {
+              t.curQuests[quest_selected-1].progress += tempSteps;
+            }
+            else
+            {
+              stepTaskActive = false;
+              completeQuest();
+            }
+          else{ //in a dungeon
+            if (D.currQuests[D.currFloor].progress < D.currQuests[D.currFloor].requirement)
+            {
+              D.currQuests[D.currFloor].progress += tempSteps;
+            }
+            else
+            {
+              stepTaskActive = false;
+              completeQuest();
+            }
+          } // end in dungeon else
+        }// end if steptask
         else if (travelSteps > 0) // we are travelling rn
         {
           travelSteps -= tempSteps;
