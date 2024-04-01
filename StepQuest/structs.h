@@ -13,9 +13,10 @@ enum screen {
   WORLDMAP,
    SETTINGS,
    TOWNMENU,
+   DUNGEON,
    TIMEMENU,
-   STATUS2,
-   DUNGEON
+   STATUS2
+   
 };
 
 // this is unnecessary with the player location imo

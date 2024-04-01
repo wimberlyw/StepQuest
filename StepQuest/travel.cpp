@@ -195,6 +195,8 @@ void beginTravel(int location)
     travelling = true;
 
     createPopup("Travel started! Enjoy your trip!");
+    p.currStatus = INTRAVEL;
+    screen = STATUSSCREEN;
 
     return;
   }

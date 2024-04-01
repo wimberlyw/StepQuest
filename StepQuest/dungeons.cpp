@@ -128,29 +128,29 @@ void drawDungeonQuests(dungeon D)
 {
         background.setTextSize(1);
         background.setTextColor(TFT_WHITE);
-        background.setCursor(65,75);
+        background.setCursor(65,75,1);
         background.print("Current Floor: ");
         background.print(D.currFloor + 1);
         background.print("/");
         background.print(D.numDungeonFloors); 
         background.setTextColor(TFT_BLACK);
         if(D.currQuests[D.currFloor].type == 4){
-            background.setCursor(65,105); 
+            background.setCursor(65,105,1); 
             background.print("You've found a ");
-            background.setCursor(65,115);
+            background.setCursor(65,115,1);
             background.print(D.currQuests[D.currFloor].desc1);
-            background.setCursor(65,125);
+            background.setCursor(65,125,1);
             background.print(D.currQuests[D.currFloor].desc2);    
         }
         else{
-          background.setCursor(65,105);
+          background.setCursor(65,105,1);
           background.print(D.currQuests[D.currFloor].desc1);
-          background.setCursor(65,115);
+          background.setCursor(65,115,1);
           background.print(D.currQuests[D.currFloor].desc2);  
         }
         
         if(D.currQuests[D.currFloor].type < 3){
-        background.setCursor(65,125);
+        background.setCursor(65,125,1);
         background.print("Gold: ");
         background.print(D.currQuests[D.currFloor].gold);
         background.print(" XP: ");

@@ -16,6 +16,6 @@ void checkDungeonClick(int x, int y, dungeon* D);
 //
 //Item selectDungeonItem();
 
-//void refreshDungeons();
+void refreshDungeons();
 
 #endif

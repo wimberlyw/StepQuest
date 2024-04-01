@@ -558,11 +558,11 @@ void displayQuests(Quest quests[])
       case(0):
       {
         background.setTextSize(1);
-        background.setCursor(65,55);
+        background.setCursor(65,55,1);
         background.print(quests[i].desc1);
-        background.setCursor(65,65);
+        background.setCursor(65,65,1);
         background.print(quests[i].desc2);
-        background.setCursor(65,75);
+        background.setCursor(65,75,1);
         background.print("Gold: ");
         background.print(quests[i].gold);
         background.print(" XP: ");
@@ -572,11 +572,11 @@ void displayQuests(Quest quests[])
       case(1):
       {
           background.setTextSize(1);
-        background.setCursor(65,105);
+        background.setCursor(65,105,1);
         background.print(quests[i].desc1);
-        background.setCursor(65,115);
+        background.setCursor(65,115,1);
         background.print(quests[i].desc2);
-        background.setCursor(65,125);
+        background.setCursor(65,125,1);
         background.print("Gold: ");
         background.print(quests[i].gold);
         background.print(" XP: ");
@@ -586,11 +586,11 @@ void displayQuests(Quest quests[])
       case(2):
       {
           background.setTextSize(1);
-        background.setCursor(65,155);
+        background.setCursor(65,155,1);
         background.print(quests[i].desc1);
-        background.setCursor(65,165);
+        background.setCursor(65,165,1);
         background.print(quests[i].desc2);
-        background.setCursor(65,175);
+        background.setCursor(65,175,1);
         background.print("Gold: ");
         background.print(quests[i].gold);
         background.print(" XP: ");

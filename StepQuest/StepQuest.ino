@@ -81,13 +81,13 @@ int charFrame = 0;
 const int button1 = 4;
 const int button2 = 7;
 int screen = 0;
+int prevScreen = 0;
 String gest = "";
 
 int buttonState1 =0;
 int buttonState2=0;
 bool asleep = false;
 bool checkingStats = false;
-bool inDungeon = true;
 
 // Steps & Travel
 volatile unsigned int steps = 0;
@@ -177,10 +177,11 @@ void loop1(void *pvParameters) {
      
      checkIdleTime();
 
-//     if (timkeeperPtr->_hours == 12 && timkeeperPtr->_minutes == 0 && timkeeperPtr->_seconds == 0)
-//     {
-//       refreshTowns(); // untested since time isn't fully implemented yet
-//     }
+     if (timekeeper._hours == 12 && timekeeper._minutes == 0 && timekeeper._seconds == 0)
+     {
+       refreshTowns(); // untested since time isn't fully implemented yet
+       setupDungeon(p.level, p.location, &D);
+     }
 
      if (left)// you can't do tasks outside of towns/dungeons
      {
@@ -201,7 +202,8 @@ void loop1(void *pvParameters) {
       }
       else
       {
-        //setupDungeon(); // William you will have to set this up 
+        setupDungeon(p.level, p.location, &D);
+        p.currStatus = INDUNGEON;
       }
     }
      
@@ -422,7 +424,7 @@ void loop1(void *pvParameters) {
         background.setTextSize(1);
         break;  
       } // End Case 3
-      case TOWNMENU: // Also dungeon menu
+      case TOWNMENU:
       {
         background.setTextSize(1);
         background.setColorDepth(8);
@@ -571,6 +573,7 @@ void loop1(void *pvParameters) {
                 background.print(t.curQuests[2].requirement);
                 break;
               }
+              
             } // end switch
             // Display the actual quests which are available to the player
             background.setTextSize(1);
@@ -596,10 +599,16 @@ void loop1(void *pvParameters) {
             background.print("Shop");
           }
         }
-        else // we are in dungeon
-        {
-          background.pushImage(0,0, 240, 240, dungeoncropped);
+        else{ // in a dungeon
+          if(prevScreen == DUNGEON){
+            screen--;  
+          }
+          else{
+            screen++;
+          }
+          
         }
+        
         break;
       } // End Case 4
       case TIMEMENU:
@@ -716,7 +725,10 @@ void loop1(void *pvParameters) {
           background.setCursor(55, 100, 2);
           background.print("Dungeon will ");
           background.setCursor(55, 120, 2);
-          background.print("Re-Open In 12 Hours");
+          background.print("Re-Open In");
+          int hoursLeft = timekeeper._hours % 12;
+          background.print(hoursLeft);
+          background.print(" Hours");
           
         }
         break;
@@ -746,10 +758,8 @@ void loop1(void *pvParameters) {
     else if(checkingStats == true){
       screen = STATUS2;
     }
-    else if(inDungeon== true){
-      screen = DUNGEON;
-    }
-    else if ((timekeeper.settingTime == false) && !travelling && !checkingStats && !inDungeon)
+
+    else if ((timekeeper.settingTime == false) && !travelling && !checkingStats && (!(p.currStatus == INDUNGEON)))
     {
         
         if(screen>TOWNMENU)
@@ -758,6 +768,17 @@ void loop1(void *pvParameters) {
         }
         if(screen<HOMESCREEN){
             screen = TOWNMENU;
+        }
+    }
+    else if(p.currStatus == INDUNGEON){
+      Serial.println(screen);
+       if(screen>DUNGEON)
+        {
+          screen = HOMESCREEN;
+        }
+
+        if(screen<HOMESCREEN){
+            screen = DUNGEON;
         }
     }
 
@@ -886,20 +907,20 @@ void readButtons(){
     if(buttonState1 == LOW ){
       Serial.println("Button1");
 
-      timekeeper.idleTime = 15; // reset idle timer
+      timekeeper.idleTime = 30; // reset idle timer
       
       screen++;
   
     }
     if(buttonState2 == LOW ){
       Serial.println("Button2");
-      timekeeper.idleTime = 15; // reset idle timer
+      timekeeper.idleTime = 30; // reset idle timer
       screen--;  
       
     }
     if(buttonState2 == LOW && buttonState1 ==LOW){
       Serial.println("Both");
-      timekeeper.idleTime = 15; // reset idle timer
+      timekeeper.idleTime = 30; // reset idle timer
       
     }
   } 
@@ -948,7 +969,7 @@ void setScreenState(bool state){
     //
     tft.writecommand(0x11);
     blValue = 100;
-    TFT_SET_BL(&blValue); //  turn screen backlight off
+    TFT_SET_BL(&blValue); //  turn screen backlight offf
   }
 }
 
@@ -966,15 +987,18 @@ void readScreenGesture(){
     if (millis() - previousMillisScreen < SCREENDEBOUNCE){
       return;
     }
-    timekeeper.idleTime = 15; // reset idle timer
+    timekeeper.idleTime = 30; // reset idle timer
     if(gest == "SWIPE LEFT"){ 
       //re-initialize the timing
       previousMillisScreen = millis();
       // advance the screen
+      prevScreen = screen;
       screen++;
+      
     }
     if(gest == "SWIPE RIGHT"){
       previousMillisScreen = millis();
+      prevScreen = screen;
       screen--;
     }
     if (gest == "SINGLE CLICK"){
@@ -1019,6 +1043,7 @@ void readScreenGesture(){
   
   }
 }
+
 
 void setup() {
   bool status;
@@ -1114,10 +1139,8 @@ void setup() {
   Serial.println(touch.data.versionInfo[2]);
     
   p = setupPlayer();
-  p.currStatus = INDUNGEON;
   setupTown(p.level, p.location);
-
-
+  p.currStatus = INTOWN;
   // Initialize timekeeping struct
   timekeeper._hours = 1;
   timekeeper._minutes = 0;
@@ -1126,7 +1149,7 @@ void setup() {
   //wifi status
   timekeeper.connection = false;
   timekeeper._days= " ";
-  timekeeper.idleTime = 15;
+  timekeeper.idleTime = 30;
   
   // Time Setting Screen
   timekeeper.settingTime = false;
@@ -1138,6 +1161,5 @@ void setup() {
   xTaskCreatePinnedToCore(loop1, "loop1", 8000, NULL, 1, NULL, 1);
 //  xTaskCreatePinnedToCore(loop, "loop", 4096, NULL, 2, NULL, 1);
   blValue = 100; // backlight level
- screen = DUNGEON;
   
 }
