@@ -326,9 +326,9 @@ void displayItems()
     {
       case(0):
       {
-        background.setCursor(65,55);
+        background.setCursor(65,55,1);
         background.print(t.shopItems[i].itemName);
-        background.setCursor(65,75);
+        background.setCursor(65,75,1);
         background.print("Gold: ");
         background.print(t.shopItems[i].price);
         if (t.shopItems[i].type == 0)
@@ -344,9 +344,9 @@ void displayItems()
       }
       case(1):
       {
-        background.setCursor(65,105);
+        background.setCursor(65,105,1);
         background.print(t.shopItems[i].itemName);
-        background.setCursor(65,125);
+        background.setCursor(65,125,1);
         background.print("Gold: ");
         background.print(t.shopItems[i].price);
         if (t.shopItems[i].type == 0)
@@ -362,9 +362,9 @@ void displayItems()
       }
       case(2):
       {
-        background.setCursor(65,155);
+        background.setCursor(65,155,1);
         background.print(t.shopItems[i].itemName);
-        background.setCursor(65,175);
+        background.setCursor(65,175,1);
         background.print("Gold: ");
         background.print(t.shopItems[i].price);
         if (t.shopItems[i].type == 0)
@@ -381,6 +381,18 @@ void displayItems()
     }
   }
 }
+
+
+Item selectDungeonItem(int level)
+{
+  // pick a random store
+  int sto = random(0, level); // random from the shop array  
+  // pick a random item
+  int pick = random(shop_size[sto]);
+    
+  return shop[sto][pick];
+}
+
 
 void recallShop()
 {

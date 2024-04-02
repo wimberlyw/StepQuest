@@ -89,3 +89,12 @@ void createPopup(String s)
 
   checkForTap();
 }
+
+void createBlankPopup(String s)
+{
+  writePopupText(s);
+  popupText.pushToSprite(&background,40,80);
+  background.pushSprite(0,0);
+
+  checkForTap();
+}
