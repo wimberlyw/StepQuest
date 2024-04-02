@@ -725,8 +725,8 @@ void loop1(void *pvParameters) {
           background.setCursor(55, 100, 2);
           background.print("Dungeon will ");
           background.setCursor(55, 120, 2);
-          background.print("Re-Open In");
-          int hoursLeft = timekeeper._hours % 12;
+          background.print("Re-Open In ");
+          int hoursLeft = abs(int(timekeeper._hours - 12));
           background.print(hoursLeft);
           background.print(" Hours");
           
@@ -1141,6 +1141,7 @@ void setup() {
   p = setupPlayer();
   setupTown(p.level, p.location);
   p.currStatus = INTOWN;
+  
   // Initialize timekeeping struct
   timekeeper._hours = 1;
   timekeeper._minutes = 0;

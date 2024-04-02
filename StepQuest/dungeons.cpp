@@ -28,7 +28,7 @@ extern Player p;
 
 
 void setupDungeon(int level, int location, dungeon* D) {
-  Serial.println(p.currStatus);
+  
   int dungeonFloors = random(1, (5 * level)); // random 1 - 5
 
   D->numDungeonFloors = dungeonFloors;
@@ -43,20 +43,10 @@ void setupDungeon(int level, int location, dungeon* D) {
   for(int i= 0; i<dungeonFloors; i++)
   {
     
-    roll = random(3);
-    Serial.print("roll ");
-    Serial.print(roll);
-    switch(roll){
-      case 0 :
-      {
-        D->currQuests[i] = createQuest(random(level, 2*level), location); // Generate a quest at 1 or 2 times the player level
-        Serial.println(" Quest");
-        numQuests++;
-        break;
-      }
-      case 1:
-      {
-      Item it = selectDungeonItem(level);
+
+    if(i==5){
+      // An Item every 5 floors
+      Item it = selectDungeonItem(level); // Get a level appropriate item.
       D->currItems[i] = it;
       Serial.println(" Item");
       String d1 = "";
@@ -102,21 +92,29 @@ void setupDungeon(int level, int location, dungeon* D) {
       
       
       Quest itemQ = {.desc1= d1,.desc2= d2,.requirement=0,.progress=0,.type=4,.gold=0,.xp=0,.valid=true,.active=false};
-      D->currQuests[i] = itemQ;
-      numItems++;  
-      break;
+      D->currQuests[i] = itemQ; // Save the item to the Dungeon struct as a quest. 
+      numItems++;
     }
-   case 2:
-    {
+    else{// if not the 5th floor
+      roll = random(3); // 0 : 2
+      Serial.print("roll ");
+      Serial.print(roll);
+      if(roll<=1){ // 2/3 chance of Quest
+       // A Quest
+        D->currQuests[i] = createQuest(random(level, 2*level), location); // Generate a quest at 1 or 2 times the player level
+        Serial.println(" Quest");
+        numQuests++;
+        
+        }
+      else{ // Money
       Serial.println(" Money");
       Quest qe = createMoneyQuest(level, location);
       Serial.println(qe.desc1);
       Serial.println(qe.desc2);
       Serial.println(qe.gold);
       D->currQuests[i] = qe; 
-      break;
-    }
-    } 
+      }
+    }// end else not 5th floor 
   } // for
     
   D->currFloor = 0;
