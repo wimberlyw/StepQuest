@@ -11,7 +11,7 @@
 #include "forestcropped.h"
 #include "steps.h"
 #include "travel.h"
-
+#include "dungeons.h"
 #include "player.h"
 #include "settingsMenu.h"
 //#include "wifitime.h"
@@ -20,6 +20,7 @@
 #include "shops.h"
 #include "timekeeping.h"
 #include "combat.h"
+#include "dungeons.h"
 
 #define I2C_SDA 35
 #define I2C_SCL 36
@@ -41,7 +42,7 @@ TFT_eSPI tft = TFT_eSPI();  // Create object "tft"
 TFT_eSprite Char = TFT_eSprite(&tft);
 TFT_eSprite background = TFT_eSprite(&tft);
 //TFT_eSprite worldmap = TFT_eSprite(&tft);
-// TFT_eSprite foregroud = TFT_eSprite(&tft);
+//TFT_eSprite foreground = TFT_eSprite(&tft);
 TFT_eSprite popup = TFT_eSprite(&tft);
 TFT_eSprite popupText = TFT_eSprite(&tft);
 //TFT_eSprite Dungeon = TFT_eSprite(&tft);
@@ -80,18 +81,13 @@ int charFrame = 0;
 const int button1 = 4;
 const int button2 = 7;
 int screen = 0;
+int prevScreen = 0;
 String gest = "";
 
 int buttonState1 =0;
 int buttonState2=0;
 bool asleep = false;
-
-// this is unnecessary with the player location imo
-enum states {
-  TOWN = 0,
-  TRAVEL,
-  DUNGEON,
-};
+bool checkingStats = false;
 
 // Steps & Travel
 volatile unsigned int steps = 0;
@@ -118,12 +114,16 @@ Town t;
 boolean shopDisplayed = false;
 boolean questDisplayed = false;
 int quest_selected = 0;
+int dungeon_quest_selected = 0;
 int player_level = 50;
 boolean stepTaskActive = false;
 boolean jackTaskActive = false;
 boolean squatTaskActive = false;
 boolean left = false;
 boolean questCompleted = false;
+
+//Dungeon
+dungeon D;
 
 // Combat
 int stepsToCombat = 0; // randomly generated number to determine ater how many steps combat occurs
@@ -181,6 +181,7 @@ void loop1(void *pvParameters) {
      if (timekeeper._hours == 12 && timekeeper._minutes == 0 && timekeeper._seconds == 0)
      {
        refreshTowns(); // untested since time isn't fully implemented yet
+       setupDungeon(p.level, p.location, &D);
      }
 
      if (left)// you can't do tasks outside of towns/dungeons
@@ -202,7 +203,8 @@ void loop1(void *pvParameters) {
       }
       else
       {
-        //setupDungeon(); // William you will have to set this up 
+        setupDungeon(p.level, p.location, &D);
+        p.currStatus = INDUNGEON;
       }
     }
 
@@ -224,19 +226,19 @@ void loop1(void *pvParameters) {
         if (shopDisplayed) shopDisplayed = false;
         if (questDisplayed) questDisplayed = false;
 
-        if (travelling)
-        {
-          background.setCursor(45, 160, 4);
-          background.print("Travel: ");
-          background.print(totalTravelSteps - travelSteps);
-          background.print("/");
-          background.println(totalTravelSteps);
-        }
-        
-          
+  
           background.fillScreen(TFT_BLACK);
-          background.setCursor(65, 60, 4);
+   
           background.setTextColor(TFT_RED, TFT_BLACK);
+        if (p.currStatus == INTRAVEL)
+          {
+            background.setCursor(45, 38, 4);
+            background.print("Travel: ");
+            background.print(totalTravelSteps - travelSteps);
+            background.print("/");
+            background.println(totalTravelSteps);
+        }
+          background.setCursor(70, 66, 4);
           background.print("Steps: ");
           background.print(steps);
           background.setCursor(10, 100, 7);
@@ -258,9 +260,12 @@ void loop1(void *pvParameters) {
           background.print(timekeeper._seconds);
           if(timekeeper.connection == true)
           {
-             background.setCursor(45, 180, 4);
+             background.setCursor(59, 165, 4);
              background.println(timekeeper._days);
           }
+
+ 
+        
         
         break;
         
@@ -272,18 +277,43 @@ void loop1(void *pvParameters) {
         Char.setSwapBytes(false);
         //Char.setColorDepth(8);
         // Set the font colour to be white with a black background
-        background.setCursor(65, 60, 4);
-        background.setTextColor(TFT_RED, TFT_BLACK);
         
+      
+
+        background.setTextColor(TFT_BLACK);
+        background.setCursor(75, 20, 4);
+        switch(p.currStatus){
+          case 0:
+            {
+              background.pushImage(0,0, 240, 240, castlecropped);
+              background.print("In Town");
+              break;
+            }
+          case 1:
+            {
+              background.setTextColor(TFT_WHITE);
+              background.pushImage(0,0, 240, 240, forestcropped);
+              background.setCursor(69, 20, 4);
+              background.print("Traveling");
+              //background.setTextColor(TFT_RED);
+              background.setCursor(89, 46, 4);
+              background.print(totalTravelSteps - travelSteps);
+              background.print("/");
+              background.println(totalTravelSteps);
+              break;
+            }
+          case 2:
+            {
+              background.pushImage(0,0, 240, 240, dungeoncropped);
+              background.print("Dungeon");
+              break;
+            }
+        }
+        //background.setCursor(73, 50, 4);
+        background.setTextColor(TFT_GREEN);
+        background.setCursor(75, 210, 4);
         background.print("Level: ");
         background.println(p.level);
-        background.print("Gold: ");
-        background.print(p.gold);
-        background.print("XP: ");
-        background.print(p.xp); // Might be a good idea to only display the truncated version of xp since I've changed it to a float
-        background.print("ARMOR:");
-        background.print((p.itemLevels[0]+p.itemLevels[1]+p.itemLevels[2]));
-      
         // Animate
         if (millis() - prevAnim >= ANIMINTERVAL) //every 300ms
         {
@@ -296,7 +326,7 @@ void loop1(void *pvParameters) {
           charFrame = 0;
         }
         Char.pushImage(0,0,96,96, C1[charFrame] ); // push to the created  at 0, 0, size of 96 x 96, the C1 array from char0.h, charFrame index.
-        Char.pushToSprite(&background, 70, 115, TFT_BLACK);
+        Char.pushToSprite(&background, 70, 108, TFT_BLACK);
         break;
       } // End Case 1
       case WORLDMAP: // map screen
@@ -306,6 +336,7 @@ void loop1(void *pvParameters) {
 
         if (p.path != -1) // we are travelling
         {
+          p.currStatus = INTRAVEL;
           switch(p.path)
           {
             case(0): // path 1
@@ -336,26 +367,31 @@ void loop1(void *pvParameters) {
           {
             case(0): // town 1
             {
+              p.currStatus = INTOWN;
               background.drawSpot(55,200,4,TFT_BLACK);
               break;
-            } // end of case 0
+            } // end of town1
             case(1): // town 2
             {
+              p.currStatus = INTOWN;
               background.drawSpot(171,200,4,TFT_BLACK);
               break;
-            } // end of case 1
+            } // end of town2
             case(2): // dungeon 1
             {
+              p.currStatus = INDUNGEON;
               background.drawSpot(210,107,4,TFT_BLACK);
               break;
-            } // end of case 2
+            } // end of dungeon 1
             case(3): // town 3
             {
+              p.currStatus = INTOWN;
               background.drawSpot(54,95,4,TFT_BLACK);
               break;
             } // end of case 3
             case(4): // dungeon 2
             {
+              p.currStatus = INDUNGEON;
               background.drawSpot(152,45,4,TFT_BLACK);
               break;
             } // end of case 4
@@ -398,11 +434,11 @@ void loop1(void *pvParameters) {
         background.setTextSize(1);
         break;  
       } // End Case 3
-      case TOWNMENU: // Also dungeon menu
+      case TOWNMENU:
       {
         background.setTextSize(1);
-        //background.setColorDepth(8);
-        //background.createSprite(240,240);
+        background.setColorDepth(8);
+        background.createSprite(240,240);
         background.setSwapBytes(true);
          if (p.location == 0 || p.location == 1 || p.location == 3) // we are in a town
         {
@@ -546,6 +582,7 @@ void loop1(void *pvParameters) {
                 background.print(t.curQuests[2].requirement);
                 break;
               }
+              
             } // end switch
             // Display the actual quests which are available to the player
             background.setTextSize(1);
@@ -571,10 +608,16 @@ void loop1(void *pvParameters) {
             background.print("Shop");
           }
         }
-        else // we are in dungeon
-        {
-          background.pushImage(0,0, 240, 240, dungeoncroppped);
+        else{ // in a dungeon
+          if(prevScreen == DUNGEON){
+            screen--;  
+          }
+          else{
+            screen++;
+          }
+          
         }
+        
         break;
       } // End Case 4
       case TIMEMENU:
@@ -615,23 +658,117 @@ void loop1(void *pvParameters) {
       background.fillTriangle((35+65), (70 + 60+ 31), (14+65), (86 +60), (56+65), (86+60), TFT_CYAN);
       break;
       } // End Case TIMEMENU
+      case STATUS2:
+      {
+        background.fillScreen(TFT_BLACK);
+        background.setTextColor(TFT_GREEN);
+        background.setCursor(69, 30, 4);
+        background.print("LEVEL: ");
+        background.println(p.level);
+        background.setCursor(73, 62, 4);
+        //background.setCursor(73, 90, 4);
+        //background.setCursor(13, 90, 4);
+        background.print("Gold: ");
+        background.print(p.gold);
+        //background.setCursor(126, 93, 4);
+        background.setCursor(75, 90, 4);
+        //background.setCursor(75, 120, 4);
+        background.print("XP: ");
+        background.print(p.xp); // Might be a good idea to only display the truncated version of xp since I've changed it to a float
+       //background.setCursor(73, 150, 4);
+        background.setCursor(73, 120, 4);
+        background.print("ARMOR:");
+        background.println((p.itemLevels[0]+p.itemLevels[1]+p.itemLevels[2]));
+        //background.setCursor(73, 178, 4);
+        background.setCursor(73, 150, 4);
+        break;
+      }
+      case DUNGEON:
+      {
+        background.pushImage(0,0, 240, 240, dungeoncropped);  
+        background.setTextSize(1);
+        if(!D.defeated){
+          
+          background.fillRoundRect(60,100,120,40,1,TFT_WHITE);
+        switch(D.dungeon_quest_selected)
+        {
+          case 0:
+          {
+            background.fillRoundRect(60,100,120,40,1,TFT_WHITE);
+            break;
+          }
+          case 1:
+          {
+            
+            
+              background.fillRoundRect(60,100,120,40,1,TFT_CYAN);
+              background.drawRoundRect(60,100,120,40,1,TFT_BLACK);
+              background.fillRoundRect(184,100,50,40,1,TFT_GREEN);
+              
+               background.setTextColor(TFT_BLACK);
+                if (D.currQuests[D.currFloor].active)
+                {
+                  background.setCursor(186,105);
+                  background.print("Active");
+                }
+                else
+                {
+                  background.setCursor(186,105);
+                  background.print("Begin");
+                }
+                background.setTextSize(1);
+                background.setCursor(186,130);
+                background.print(D.currQuests[D.currFloor].progress);
+                background.print("/");
+                background.print(D.currQuests[D.currFloor].requirement);
+                break;
+              }
+          }
+
+       drawDungeonQuests(D);
+       //break;         
+        }// end if!d.defeated
+        else{ // if dungeon defeated
+          background.fillRoundRect(50,100,137,40,1,TFT_WHITE);
+          background.setTextColor(TFT_RED);
+          background.setCursor(55, 100, 2);
+          background.print("Dungeon will ");
+          background.setCursor(55, 120, 2);
+          background.print("Re-Open In ");
+          int hoursLeft = abs(int(timekeeper._hours - 12));
+          background.print(hoursLeft);
+          background.print(" Hours");
+          
+        }
+        break;
+      }// case Dungeon
     }// end switch(screen)
     // Push Background to screen
     background.pushSprite(0,0);
     readScreenGesture();
     readButtons();
   
-    Serial.println(screen);
+
     // limits for the screen variable
     if (travelling)
     {
+      if(checkingStats == true){
+        screen = STATUS2;
+      }
+      else
+      {
       if (screen > SETTINGS) screen = HOMESCREEN;
       if (screen < HOMESCREEN) screen = SETTINGS;
+      }
     }
     else if(timekeeper.settingTime == true){
       screen = TIMEMENU;
     }
-    else if ((timekeeper.settingTime == false) && !travelling)
+    else if(checkingStats == true){
+      screen = STATUS2;
+    }
+
+    else if ((timekeeper.settingTime == false) && !travelling && !checkingStats && (!(p.currStatus == INDUNGEON)))
     {
         
         if(screen>TOWNMENU)
@@ -640,6 +777,17 @@ void loop1(void *pvParameters) {
         }
         if(screen<HOMESCREEN){
             screen = TOWNMENU;
+        }
+    }
+    else if(p.currStatus == INDUNGEON){
+      Serial.println(screen);
+       if(screen>DUNGEON)
+        {
+          screen = HOMESCREEN;
+        }
+
+        if(screen<HOMESCREEN){
+            screen = DUNGEON;
         }
     }
 
@@ -703,16 +851,28 @@ void loop2(void *pvParameters)
 
         if (stepTaskActive) // step task, we are in location, not travelling
         {
-          if (t.curQuests[quest_selected-1].progress < t.curQuests[quest_selected-1].requirement)
-          {
-            t.curQuests[quest_selected-1].progress += tempSteps;
-          }
-          else
-          {
-            stepTaskActive = false;
-            completeQuest();
-          }
-        }
+          if(p.currStatus != INDUNGEON)
+            if (t.curQuests[quest_selected-1].progress < t.curQuests[quest_selected-1].requirement)
+            {
+              t.curQuests[quest_selected-1].progress += tempSteps;
+            }
+            else
+            {
+              stepTaskActive = false;
+              completeQuest();
+            }
+          else{ //in a dungeon
+            if (D.currQuests[D.currFloor].progress < D.currQuests[D.currFloor].requirement)
+            {
+              D.currQuests[D.currFloor].progress += tempSteps;
+            }
+            else
+            {
+              stepTaskActive = false;
+              completeQuest();
+            }
+          } // end in dungeon else
+        }// end if steptask
         else if (travelSteps > 0) // we are travelling rn
         {
           travelSteps -= tempSteps;
@@ -756,20 +916,20 @@ void readButtons(){
     if(buttonState1 == LOW ){
       Serial.println("Button1");
 
-      timekeeper.idleTime = 15; // reset idle timer
+      timekeeper.idleTime = 30; // reset idle timer
       
       screen++;
   
     }
     if(buttonState2 == LOW ){
       Serial.println("Button2");
-      timekeeper.idleTime = 15; // reset idle timer
+      timekeeper.idleTime = 30; // reset idle timer
       screen--;  
       
     }
     if(buttonState2 == LOW && buttonState1 ==LOW){
       Serial.println("Both");
-      timekeeper.idleTime = 15; // reset idle timer
+      timekeeper.idleTime = 30; // reset idle timer
       
     }
   } 
@@ -818,7 +978,7 @@ void setScreenState(bool state){
     //
     tft.writecommand(0x11);
     blValue = 100;
-    TFT_SET_BL(&blValue); //  turn screen backlight off
+    TFT_SET_BL(&blValue); //  turn screen backlight offf
   }
 }
 
@@ -836,15 +996,18 @@ void readScreenGesture(){
     if (millis() - previousMillisScreen < SCREENDEBOUNCE){
       return;
     }
-    timekeeper.idleTime = 15; // reset idle timer
+    timekeeper.idleTime = 30; // reset idle timer
     if(gest == "SWIPE LEFT"){ 
       //re-initialize the timing
       previousMillisScreen = millis();
       // advance the screen
+      prevScreen = screen;
       screen++;
+      
     }
     if(gest == "SWIPE RIGHT"){
       previousMillisScreen = millis();
+      prevScreen = screen;
       screen--;
     }
     if (gest == "SINGLE CLICK"){
@@ -874,10 +1037,22 @@ void readScreenGesture(){
         checkMenuPress(touch.data.x, touch.data.y, &timekeeper, &blValue); // If returns one we clicked on the set time screen
       
       }
+      else if (screen == STATUSSCREEN || screen == STATUS2)
+      {
+        checkingStats = !checkingStats;
+        if(checkingStats==false){
+          screen = STATUSSCREEN;
+        }
+      }
+      else if (screen == DUNGEON)
+      {
+        checkDungeonClick(touch.data.x, touch.data.y, &D);
+      }
     }
   
   }
 }
+
 
 void setup() {
   bool status;
@@ -885,7 +1060,7 @@ void setup() {
   pinMode(button2, INPUT_PULLUP);
 
   Serial.begin(115200);
-  
+  randomSeed(analogRead(0));
   // Set up Accelerometer.
   // Program will hang on start if accelermoter not detected.
   I2CMPU.begin(I2C_SDA, I2C_SCL, 100000); 
@@ -902,47 +1077,47 @@ void setup() {
   // mpu6050 setup
   
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
-  Serial.print("Accelerometer range set to: ");
-  switch (mpu.getAccelerometerRange()) {
-  case MPU6050_RANGE_2_G:
-    Serial.println("+-2G");
-    break;
-  case MPU6050_RANGE_4_G:
-    Serial.println("+-4G");
-    break;
-  case MPU6050_RANGE_8_G:
-    Serial.println("+-8G");
-    break;
-  case MPU6050_RANGE_16_G:
-    Serial.println("+-16G");
-    break;
-  }
+//  Serial.print("Accelerometer range set to: ");
+//  switch (mpu.getAccelerometerRange()) {
+//  case MPU6050_RANGE_2_G:
+//    Serial.println("+-2G");
+//    break;
+//  case MPU6050_RANGE_4_G:
+//    Serial.println("+-4G");
+//    break;
+//  case MPU6050_RANGE_8_G:
+//    Serial.println("+-8G");
+//    break;
+//  case MPU6050_RANGE_16_G:
+//    Serial.println("+-16G");
+//    break;
+//  }
 
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-  Serial.print("Filter bandwidth set to: ");
-  switch (mpu.getFilterBandwidth()) {
-  case MPU6050_BAND_260_HZ:
-    Serial.println("260 Hz");
-    break;
-  case MPU6050_BAND_184_HZ:
-    Serial.println("184 Hz");
-    break;
-  case MPU6050_BAND_94_HZ:
-    Serial.println("94 Hz");
-    break;
-  case MPU6050_BAND_44_HZ:
-    Serial.println("44 Hz");
-    break;
-  case MPU6050_BAND_21_HZ:
-    Serial.println("21 Hz");
-    break;
-  case MPU6050_BAND_10_HZ:
-    Serial.println("10 Hz");
-    break;
-  case MPU6050_BAND_5_HZ:
-    Serial.println("5 Hz");
-    break;
-  }
+//  Serial.print("Filter bandwidth set to: ");
+//  switch (mpu.getFilterBandwidth()) {
+//  case MPU6050_BAND_260_HZ:
+//    Serial.println("260 Hz");
+//    break;
+//  case MPU6050_BAND_184_HZ:
+//    Serial.println("184 Hz");
+//    break;
+//  case MPU6050_BAND_94_HZ:
+//    Serial.println("94 Hz");
+//    break;
+//  case MPU6050_BAND_44_HZ:
+//    Serial.println("44 Hz");
+//    break;
+//  case MPU6050_BAND_21_HZ:
+//    Serial.println("21 Hz");
+//    break;
+//  case MPU6050_BAND_10_HZ:
+//    Serial.println("10 Hz");
+//    break;
+//  case MPU6050_BAND_5_HZ:
+//    Serial.println("5 Hz");
+//    break;
+//  }
   
   // Screen Setup
   tft.init();
@@ -974,7 +1149,8 @@ void setup() {
     
   p = setupPlayer();
   setupTown(p.level, p.location);
-
+  p.currStatus = INTOWN;
+  
   // Initialize timekeeping struct
   timekeeper._hours = 1;
   timekeeper._minutes = 0;
@@ -983,17 +1159,17 @@ void setup() {
   //wifi status
   timekeeper.connection = false;
   timekeeper._days= " ";
-  timekeeper.idleTime = 15;
+  timekeeper.idleTime = 30;
   
   // Time Setting Screen
-  timekeeper.settingTime = true;
+  timekeeper.settingTime = false;
 
+    setupDungeon(p.level, p.location, &D);
   // Multithreading setup
   xTaskCreatePinnedToCore(attachStepTimerInterruptTask, "attachStepTimerInterruptTask", 4096, NULL, 1, NULL, 0);
   xTaskCreatePinnedToCore(loop2, "loop2", 8000, NULL, 1, NULL, 0);
   xTaskCreatePinnedToCore(loop1, "loop1", 8000, NULL, 1, NULL, 1);
 //  xTaskCreatePinnedToCore(loop, "loop", 4096, NULL, 2, NULL, 1);
   blValue = 100; // backlight level
-
   
 }

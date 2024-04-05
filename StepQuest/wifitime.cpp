@@ -1,7 +1,7 @@
 #include "wifitime.h"
 #include "structs.h"
 #include "time.h"
-
+#include "popup.h"
 
 const char* ssid       = "belkin.a92";
 const char* password   = "Pepper01";
@@ -104,8 +104,12 @@ void connectToWifi(struct timekeeping *timekeeperPTR){
   Serial.printf("Connecting to %s ", ssid);
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
+      String s = "connecting";
+      
       delay(500);
       Serial.print(".");
+      createBlankPopup(s);
+      s += ".";
   }
   Serial.println(" CONNECTED");
   } // end if *connection = true

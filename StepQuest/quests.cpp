@@ -1,6 +1,7 @@
 #include "quests.h"
 #include "player.h"
 #include "popup.h"
+#include "dungeons.h"
 
 /*TODO Jumping jacks need some more testing, squats and step tasks seem to work*/
 
@@ -27,6 +28,7 @@ extern TFT_eSprite background;
 extern int quest_selected;
 extern Town t;
 extern Player p;
+extern dungeon D;
 extern boolean stepTaskActive;
 extern boolean squatTaskActive;
 extern boolean jackTaskActive;
@@ -55,9 +57,27 @@ boolean jumpFlag = false;
  // type 3 = "walk for x time"
  String quest_name_3 = "Patrol Quest";
 
+// Create a Quest that just gives money
+Quest createMoneyQuest(int level, int location)
+ {
+    String desc1 = "";
+    String desc2 = "";
+    int gold = random(1,level *100) + random(1,location * 100);
+    desc1 =  "You've found " + String(gold);
+    desc2 =  "gold";
+    // int xP = random(level) + random(location);
+    
+    Quest money = {.desc1= desc1,.desc2= desc2,.requirement=0,.progress=0,.type=3,.gold=gold,.xp=0,.valid=true,.active=false};
+    return money;
+ }
+  
+ 
+ 
  // creates a randomized quest based on the player level and location (Currently does not create patrol tasks)
  Quest createQuest(int level, int location)
  {
+
+ 
     int type = random(3); // generate number between 0 and 2 
     String desc1 = "";
     String desc2 = "";
@@ -146,11 +166,32 @@ void completeQuestPopup()
 
 void completeQuest()
 {
-  // pay out reward
-  p.gold += t.curQuests[quest_selected-1].gold;
-  p.xp += t.curQuests[quest_selected-1].xp;
-
-  checkForLevelUp();
+      // pay out reward
+    p.gold += t.curQuests[quest_selected-1].gold;
+    p.xp += t.curQuests[quest_selected-1].xp;
+    checkForLevelUp();
+    
+    if(p.currStatus != INDUNGEON){
+      
+      // provide new quest if applicable
+      if (p.questRerolls[t.location] > 0)
+      {
+        t.curQuests[quest_selected-1] = createQuest(p.level, p.location);
+        p.questRerolls[t.location]--;
+      }
+      else if (t.curQuests[quest_selected-1].valid) // make the quest invalid
+      {
+        invalidateQuest();
+      }
+     quest_selected = 0;
+    }
+    else{ // if in dungeon
+      D.currQuests[D.currFloor].active = false;
+      D.currFloor++;
+      if(D.currFloor +1 > D.numDungeonFloors)
+        { D.defeated = true;}
+        D.dungeon_quest_selected = 0;
+    }
 
   // provide new quest if applicable
   if (p.questRerolls[t.location] > 0)
@@ -164,6 +205,7 @@ void completeQuest()
   }
   quest_selected = 0;
   questCompleted = true;
+
 }
 
 void jumpingJacks(sensors_event_t a)
@@ -179,14 +221,26 @@ void jumpingJacks(sensors_event_t a)
 
   if (amp >= jumpThresholdMax && cyclesJump >= 50) // more than a half second has passed since last jumping jack
   {
-    t.curQuests[quest_selected-1].progress++;
-    cyclesJump = 0;
-
-    if (t.curQuests[quest_selected-1].progress >= t.curQuests[quest_selected-1].requirement)
-    {
-      jackTaskActive = false;
-      completeQuest();
-    }
+     if(p.currStatus != INDUNGEON){
+      t.curQuests[quest_selected-1].progress++;
+      cyclesJump = 0;
+  
+      if (t.curQuests[quest_selected-1].progress >= t.curQuests[quest_selected-1].requirement)
+      {
+        jackTaskActive = false;
+        completeQuest();
+      }
+     }
+     else{ // in a dungeon
+      D.currQuests[D.currFloor].progress++;
+      cyclesJump = 0;
+  
+      if (D.currQuests[D.currFloor].progress >= D.currQuests[D.currFloor].requirement)
+      {
+        jackTaskActive = false;
+        completeQuest();
+      }
+     }
   }
 
 //  if (amp >= jumpThresholdMax)
@@ -234,13 +288,25 @@ void squats(sensors_event_t a)
   }
   else if (squatFlag && amp >= squatThresholdMax) // record a squat
   {
-    t.curQuests[quest_selected-1].progress++;
-    squatFlag = false;
+    if(p.currStatus != INDUNGEON){
+      t.curQuests[quest_selected-1].progress++;
+      squatFlag = false;
 
-    if (t.curQuests[quest_selected-1].progress >= t.curQuests[quest_selected-1].requirement)
-    {
-      squatTaskActive = false;
-      completeQuest();
+      if (t.curQuests[quest_selected-1].progress >= t.curQuests[quest_selected-1].requirement)
+      {
+        squatTaskActive = false;
+        completeQuest();
+      }
+    }
+    else{ // in a dungeon
+          D.currQuests[D.currFloor].progress++;
+          squatFlag = false;
+
+          if (D.currQuests[D.currFloor].progress >= D.currQuests[D.currFloor].requirement)
+            {
+              squatTaskActive = false;
+              completeQuest();
+            }
     }
   }
   cyclesSquat++;
@@ -253,7 +319,7 @@ void beginQuest()
     return;
   }
   t.curQuests[quest_selected-1].active = true;
-  // what type of quest are we completing?
+    // what type of quest are we completing?
   switch(t.curQuests[quest_selected-1].type)
   {
     case (0): // walking, simplest case
@@ -274,6 +340,7 @@ void beginQuest()
       break;
     }
   }
+
 }
 
 void stopQuest()
@@ -518,11 +585,11 @@ void displayQuests(Quest quests[])
       case(0):
       {
         background.setTextSize(1);
-        background.setCursor(65,55);
+        background.setCursor(65,55,1);
         background.print(quests[i].desc1);
-        background.setCursor(65,65);
+        background.setCursor(65,65,1);
         background.print(quests[i].desc2);
-        background.setCursor(65,75);
+        background.setCursor(65,75,1);
         background.print("Gold: ");
         background.print(quests[i].gold);
         background.print(" XP: ");
@@ -532,11 +599,11 @@ void displayQuests(Quest quests[])
       case(1):
       {
           background.setTextSize(1);
-        background.setCursor(65,105);
+        background.setCursor(65,105,1);
         background.print(quests[i].desc1);
-        background.setCursor(65,115);
+        background.setCursor(65,115,1);
         background.print(quests[i].desc2);
-        background.setCursor(65,125);
+        background.setCursor(65,125,1);
         background.print("Gold: ");
         background.print(quests[i].gold);
         background.print(" XP: ");
@@ -546,11 +613,11 @@ void displayQuests(Quest quests[])
       case(2):
       {
           background.setTextSize(1);
-        background.setCursor(65,155);
+        background.setCursor(65,155,1);
         background.print(quests[i].desc1);
-        background.setCursor(65,165);
+        background.setCursor(65,165,1);
         background.print(quests[i].desc2);
-        background.setCursor(65,175);
+        background.setCursor(65,175,1);
         background.print("Gold: ");
         background.print(quests[i].gold);
         background.print(" XP: ");

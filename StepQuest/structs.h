@@ -13,8 +13,18 @@ enum screen {
   WORLDMAP,
    SETTINGS,
    TOWNMENU,
-   TIMEMENU
+   DUNGEON,
+   TIMEMENU,
+   STATUS2
+   
 };
+
+// this is unnecessary with the player location imo
+typedef enum states {
+  INTOWN = 0,
+  INTRAVEL,
+  INDUNGEON,
+} States;
 
 typedef struct Location{
   int x1;
@@ -53,6 +63,19 @@ typedef struct Town{
 }Town;
 
 
+typedef struct dungeon{
+  int location;
+  int numQuests;
+  int numItems;
+  int numDungeonFloors;
+  int currFloor;
+  Quest currQuests[5];
+  Item currItems[5];
+  int dungeon_quest_selected;
+  bool defeated;
+}dungeon;
+
+
 typedef struct Player{
   int location;
   int level;
@@ -66,6 +89,7 @@ typedef struct Player{
   int itemRerolls[3]; // keeps amount of rerolls per 12 hr stored to avoid abuse
   boolean shopItemsRem[3]; // keeps track of whether the shop state is stored
   Item shopItems[3][3]; // keeps track of current state of shop, set when town is setup and updated when leaving town
+  States currStatus;
 }Player;
 
 struct timekeeping{
