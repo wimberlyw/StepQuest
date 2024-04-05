@@ -120,6 +120,7 @@ boolean stepTaskActive = false;
 boolean jackTaskActive = false;
 boolean squatTaskActive = false;
 boolean left = false;
+boolean questCompleted = false;
 
 //Dungeon
 dungeon D;
@@ -206,6 +207,12 @@ void loop1(void *pvParameters) {
         p.currStatus = INDUNGEON;
       }
     }
+
+    if (questCompleted)
+    {
+      questCompleted = false;
+      completeQuestPopup();
+    }
      
     
     //background.fillSprite(TFT_SKYBLUE);
@@ -216,6 +223,8 @@ void loop1(void *pvParameters) {
     {
       case HOMESCREEN:
       {   
+        if (shopDisplayed) shopDisplayed = false;
+        if (questDisplayed) questDisplayed = false;
 
   
           background.fillScreen(TFT_BLACK);
@@ -393,7 +402,8 @@ void loop1(void *pvParameters) {
       } // End Case 2
       case SETTINGS:
       {
-
+        if (shopDisplayed) shopDisplayed = false;
+        if (questDisplayed) questDisplayed = false;
         background.fillScreen(TFT_BLACK);
         background.setCursor(60, 40, 4);
         background.setTextColor(TFT_YELLOW, TFT_BLACK);
@@ -438,7 +448,6 @@ void loop1(void *pvParameters) {
             background.setTextSize(1);
             background.fillRoundRect(40,20,160,20,1,TFT_BLUE);
             background.setTextColor(TFT_WHITE);
-            //image.setTextSize(2);
             background.setCursor(110,20);
             background.print("Shop");
             background.fillRoundRect(40,200,160,20,1,TFT_RED);

@@ -5,6 +5,8 @@
 #define QUESTS_H
 #include "structs.h"
 
+void completeQuestPopup();
+
 Quest createQuest(int level, int location);
 Quest createMoneyQuest(int level, int location);
 

@@ -32,6 +32,7 @@ extern dungeon D;
 extern boolean stepTaskActive;
 extern boolean squatTaskActive;
 extern boolean jackTaskActive;
+extern boolean questCompleted;
 
 extern float correction;
 
@@ -155,6 +156,14 @@ Quest createMoneyQuest(int level, int location)
     return q;
  }
 
+void completeQuestPopup()
+{
+  String s = "Quest Completed! You now have: Gold " + (String)p.gold;
+  s = s + " XP " + (String)p.xp;
+  
+  createPopup(s);
+}
+
 void completeQuest()
 {
       // pay out reward
@@ -183,6 +192,19 @@ void completeQuest()
         { D.defeated = true;}
         D.dungeon_quest_selected = 0;
     }
+
+  // provide new quest if applicable
+  if (p.questRerolls[t.location] > 0)
+  {
+    t.curQuests[quest_selected-1] = createQuest(p.level, p.location);
+    p.questRerolls[t.location]--;
+  }
+  else if (t.curQuests[quest_selected-1].valid) // make the quest invalid
+  {
+    invalidateQuest();
+  }
+  quest_selected = 0;
+  questCompleted = true;
 
 }
 
@@ -307,11 +329,13 @@ void beginQuest()
     }
     case(1): // squats
     {
+      createPopup("Please note that the device will not count steps while this task is active.");
       squatTaskActive = true;
       break;
     }
     case(2): // jumping jacks
     {
+      createPopup("Please note that the device will not count steps while this task is active.");
       jackTaskActive = true;
       break;
     }
@@ -376,6 +400,7 @@ void checkQuestLocation(int x, int y)
             }
             else if (quest_selected == 1)
             {
+              if (t.curQuests[quest_selected-1].active) stopQuest();
               quest_selected = 0;
             }
             else
@@ -392,6 +417,7 @@ void checkQuestLocation(int x, int y)
             }
             else if (quest_selected == 2)
             {
+              if (t.curQuests[quest_selected-1].active) stopQuest();
               quest_selected = 0;
             }
             else
@@ -408,6 +434,7 @@ void checkQuestLocation(int x, int y)
             }
             else if (quest_selected == 3)
             {
+              if (t.curQuests[quest_selected-1].active) stopQuest();
               quest_selected = 0;
             }
             else
