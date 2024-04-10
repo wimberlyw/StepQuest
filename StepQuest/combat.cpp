@@ -9,6 +9,26 @@ extern int goldGained;
 extern int xpGained;
 extern Player p;
 
+int getTotalBattles()
+{
+  return totalBattles;
+}
+
+int getWins()
+{
+  return wins;
+}
+
+int getGold()
+{
+  return goldGained;
+}
+
+int getXp()
+{
+  return xpGained;
+}
+
 // Called at start of travel or entrance of dungeon location
 void beginCombat()
 {

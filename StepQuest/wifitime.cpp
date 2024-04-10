@@ -3,8 +3,8 @@
 #include "time.h"
 #include "popup.h"
 
-const char* ssid       = "belkin.a92";
-const char* password   = "Pepper01";
+const char* ssid       = "Jacey's iPhone";
+const char* password   = "StepQuest";
 
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = -18000  ;
@@ -24,7 +24,7 @@ void updateTimeWifi(struct timekeeping *timekeeperPTR){
           return;
         }
      
-      Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+      //Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
       unsigned int prevMillisTime = timekeeperPTR->previousMillisTime;
       unsigned int H = timekeeperPTR->_hours;
       unsigned int M = timekeeperPTR->_minutes; 
