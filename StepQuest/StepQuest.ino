@@ -198,6 +198,7 @@ void loop1(void *pvParameters) {
 
      if (travelling && travelSteps <= 0)
     {
+      startVibration();
       finishTravel();
       // setup the location
       if (p.location == 0 || p.location == 1 || p.location == 3)
@@ -800,7 +801,7 @@ void loop1(void *pvParameters) {
     }
     
 // Screen sleeping
-  
+
     
   } 
 
@@ -932,7 +933,7 @@ void readButtons(){
 }
 
 void startVibration() {
-  analogWrite(MOT_PIN, 155); // Start motor at desired intensity
+  analogWrite(MOT_PIN, 255); // Start motor at desired intensity
   previousMillisVibration = millis(); // Reset the timer
   isVibrating = true; // Indicate that vibration has started
   Serial.println("vib");
@@ -940,7 +941,7 @@ void startVibration() {
 
 void checkVibrationTime() {
   // Check if the vibration duration has elapsed
-  if (isVibrating && (millis() - previousMillisVibration >= SECOND)) {
+  if (isVibrating && (millis() - previousMillisVibration >= SECOND * 2)) {
     // Stop the motor
     analogWrite(MOT_PIN, 0);
     isVibrating = false; // Indicate that vibration has stopped
@@ -1016,7 +1017,7 @@ void readScreenGesture(){
       // advance the screen
       prevScreen = screen;
       screen++;
-      startVibration();
+      
       
     }
     if(gest == "SWIPE RIGHT"){
