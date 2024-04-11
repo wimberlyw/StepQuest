@@ -10,4 +10,12 @@ void endCombat();
 
 void battleResults();
 
+int getTotalBattles();
+
+int getWins();
+
+int getGold();
+
+int getXp();
+
 #endif

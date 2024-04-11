@@ -140,6 +140,9 @@ int xpGained = 0;
 // Player
 Player p;
 
+// Dungeon and Town Refresh
+boolean refresh = false;
+
 bool IRAM_ATTR StepTimerHandler(void * timerNo)
 {
   stepFlag = 1;
@@ -182,10 +185,11 @@ void loop1(void *pvParameters) {
      
      checkIdleTime();
 
-     if (timekeeper._hours == 12 && timekeeper._minutes == 0 && timekeeper._seconds == 0)
+     if (refresh)
      {
        refreshTowns(); // untested since time isn't fully implemented yet
        setupDungeon(p.level, p.location, &D);
+       refresh = false;
      }
 
      if (left)// you can't do tasks outside of towns/dungeons
@@ -643,12 +647,7 @@ void loop1(void *pvParameters) {
         background.print('0');
       }
       background.print(timekeeper._minutes);
-      background.print(":");
-      //background.setCursor(175, 65, 2);
-      if (timekeeper._seconds < 10) {
-        background.print("0");
-      }
-      background.print(timekeeper._seconds);
+      background.print(":00");
       if(timekeeper.connection == true){
          background.setCursor(22, 130, 6);
          background.println(timekeeper._days);
@@ -683,13 +682,33 @@ void loop1(void *pvParameters) {
         background.setCursor(75, 90, 4);
         //background.setCursor(75, 120, 4);
         background.print("XP: ");
-        background.print(p.xp); // Might be a good idea to only display the truncated version of xp since I've changed it to a float
+        background.print((int)p.xp);
        //background.setCursor(73, 150, 4);
         background.setCursor(73, 120, 4);
         background.print("ARMOR:");
         background.println((p.itemLevels[0]+p.itemLevels[1]+p.itemLevels[2]));
         //background.setCursor(73, 178, 4);
-        background.setCursor(73, 150, 4);
+        if (inCombat)
+        {
+          int total = getTotalBattles();
+          int wins = getWins();
+          int losses = total-wins;
+          background.setTextColor(TFT_YELLOW);
+          background.setCursor(73, 140, 2);
+          background.print("Battles: ");
+          background.print(total);
+          background.setCursor(73,160,2);
+          background.print("Wins: ");
+          background.print(wins);
+          background.print(" Losses: ");
+          background.print(losses);
+          background.setCursor(73,180,2);
+          background.print("Gold Gain: ");
+          background.print(getGold());
+          background.setCursor(73,200,2);
+          background.print("XP Gain: ");
+          background.print(getXp());
+        }
         break;
       }
       case DUNGEON:
@@ -802,17 +821,7 @@ void loop1(void *pvParameters) {
     }
 
     background.deleteSprite();
-    Char.deleteSprite();
-    // Timekeeping
-        if(timekeeper.connection ==false)
-    {
-      
-      processOfflineTimekeeping(timekeeperPtr); 
-    }
-    else{
-      updateTimeWifi(timekeeperPtr); 
-    }
-    
+    Char.deleteSprite();  
 // Screen sleeping
 
     
@@ -899,11 +908,24 @@ void loop2(void *pvParameters)
       }
       stepFlag = 0;
     }
-
+    // Timekeeping
+    if(!timekeeper.settingTime) // don't count while setting time
+    {
+      if(timekeeper.connection == false)
+      {
+      processOfflineTimekeeping(timekeeperPtr); 
+      }
+      else{
+        updateTimeWifi(timekeeperPtr); 
+      }
+    }
+        
+    if (timekeeper._hours == 12 && timekeeper._minutes == 0 && timekeeper._seconds == 0)
+    {
+      refresh = true;
+    }
     
   }
-
- 
 } // End loop2()
 
 void loop(){}// TimeKeeping

@@ -86,30 +86,35 @@ void checkMenuPress(int x, int y, struct timekeeping *timekeeperPTR, uint8_t * b
             case (0):
               {
                 ++(timekeeperPTR->_hours);
+                if(timekeeperPTR->_hours == 13) timekeeperPTR->_hours = 1;
                 Serial.println("Hours Up");
                 break;
               }
             case (1):
               {
                 --(timekeeperPTR->_hours);
+                if(timekeeperPTR->_hours == 0) timekeeperPTR->_hours = 12;
                 Serial.println("Hours Down");
                 break;
               }
             case (2):
               {
                 ++(timekeeperPTR->_minutes);
+                if(timekeeperPTR->_minutes == 60) timekeeperPTR->_minutes = 0;
                 Serial.println("Mins Up");
                 break;
               }
             case (3):
               {
                 --(timekeeperPTR->_minutes);
+                if(timekeeperPTR->_minutes == -1) timekeeperPTR->_minutes = 59;
                 Serial.println("Mins Down");
                 break;
               }
             case (4):
               {
                 Serial.println("OK");
+                timekeeperPTR->_seconds = 0;
                 timekeeperPTR->settingTime = false;
                 break;
               }
