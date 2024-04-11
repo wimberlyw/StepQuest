@@ -29,6 +29,8 @@
 #define ANIMINTERVAL 200
 #define STEP_TIMER_INTERVAL_MS 20
 #define SECOND 1000
+#define MOT_PIN 47
+
 
 Adafruit_MPU6050 mpu;
 
@@ -59,7 +61,9 @@ uint8_t blValue;
 unsigned long previousMillisScreen =0;
 unsigned long previousMillisButton = 0;
 unsigned long previousMillisIdle = 0;
+unsigned long previousMillisVibration = 0;
 
+bool isVibrating = false;
 /* struct timekeeping{
   unsigned int _hours;
   unsigned int _minutes; 
@@ -120,6 +124,7 @@ boolean stepTaskActive = false;
 boolean jackTaskActive = false;
 boolean squatTaskActive = false;
 boolean left = false;
+boolean questCompleted = false;
 
 //Dungeon
 dungeon D;
@@ -194,6 +199,7 @@ void loop1(void *pvParameters) {
 
      if (travelling && travelSteps <= 0)
     {
+      startVibration();
       finishTravel();
       // setup the location
       if (p.location == 0 || p.location == 1 || p.location == 3)
@@ -202,9 +208,19 @@ void loop1(void *pvParameters) {
       }
       else
       {
-        setupDungeon(p.level, p.location, &D);
-        p.currStatus = INDUNGEON;
+        if(!D.defeated)
+        {
+          setupDungeon(p.level, p.location, &D);
+          p.currStatus = INDUNGEON;          
+        }
+
       }
+    }
+
+    if (questCompleted)
+    {
+      questCompleted = false;
+      completeQuestPopup();
     }
      
     
@@ -216,6 +232,8 @@ void loop1(void *pvParameters) {
     {
       case HOMESCREEN:
       {   
+        if (shopDisplayed) shopDisplayed = false;
+        if (questDisplayed) questDisplayed = false;
 
   
           background.fillScreen(TFT_BLACK);
@@ -393,7 +411,8 @@ void loop1(void *pvParameters) {
       } // End Case 2
       case SETTINGS:
       {
-
+        if (shopDisplayed) shopDisplayed = false;
+        if (questDisplayed) questDisplayed = false;
         background.fillScreen(TFT_BLACK);
         background.setCursor(60, 40, 4);
         background.setTextColor(TFT_YELLOW, TFT_BLACK);
@@ -438,7 +457,6 @@ void loop1(void *pvParameters) {
             background.setTextSize(1);
             background.fillRoundRect(40,20,160,20,1,TFT_BLUE);
             background.setTextColor(TFT_WHITE);
-            //image.setTextSize(2);
             background.setCursor(110,20);
             background.print("Shop");
             background.fillRoundRect(40,200,160,20,1,TFT_RED);
@@ -738,6 +756,7 @@ void loop1(void *pvParameters) {
     background.pushSprite(0,0);
     readScreenGesture();
     readButtons();
+    checkVibrationTime();
   
 
     // limits for the screen variable
@@ -795,7 +814,7 @@ void loop1(void *pvParameters) {
     }
     
 // Screen sleeping
-  
+
     
   } 
 
@@ -926,6 +945,23 @@ void readButtons(){
   } 
 }
 
+void startVibration() {
+  analogWrite(MOT_PIN, 255); // Start motor at desired intensity
+  previousMillisVibration = millis(); // Reset the timer
+  isVibrating = true; // Indicate that vibration has started
+  Serial.println("vib");
+}
+
+void checkVibrationTime() {
+  // Check if the vibration duration has elapsed
+  if (isVibrating && (millis() - previousMillisVibration >= SECOND * 2)) {
+    // Stop the motor
+    analogWrite(MOT_PIN, 0);
+    isVibrating = false; // Indicate that vibration has stopped
+     Serial.println("Stopped");
+  }
+}
+
 void checkIdleTime(){
       
       
@@ -995,6 +1031,7 @@ void readScreenGesture(){
       prevScreen = screen;
       screen++;
       
+      
     }
     if(gest == "SWIPE RIGHT"){
       previousMillisScreen = millis();
@@ -1049,6 +1086,7 @@ void setup() {
   bool status;
   pinMode(button1, INPUT_PULLUP); // config GPIO21 as input pin and enable the internal pull-up resistor
   pinMode(button2, INPUT_PULLUP);
+  pinMode(MOT_PIN, OUTPUT);
 
   Serial.begin(115200);
   randomSeed(analogRead(0));
