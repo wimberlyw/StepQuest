@@ -29,6 +29,8 @@
 #define ANIMINTERVAL 200
 #define STEP_TIMER_INTERVAL_MS 20
 #define SECOND 1000
+#define MOT_PIN 47
+
 
 Adafruit_MPU6050 mpu;
 
@@ -59,7 +61,9 @@ uint8_t blValue;
 unsigned long previousMillisScreen =0;
 unsigned long previousMillisButton = 0;
 unsigned long previousMillisIdle = 0;
+unsigned long previousMillisVibration = 0;
 
+bool isVibrating = false;
 /* struct timekeeping{
   unsigned int _hours;
   unsigned int _minutes; 
@@ -738,6 +742,7 @@ void loop1(void *pvParameters) {
     background.pushSprite(0,0);
     readScreenGesture();
     readButtons();
+    checkVibrationTime();
   
 
     // limits for the screen variable
@@ -926,6 +931,23 @@ void readButtons(){
   } 
 }
 
+void startVibration() {
+  analogWrite(MOT_PIN, 155); // Start motor at desired intensity
+  previousMillisVibration = millis(); // Reset the timer
+  isVibrating = true; // Indicate that vibration has started
+  Serial.println("vib");
+}
+
+void checkVibrationTime() {
+  // Check if the vibration duration has elapsed
+  if (isVibrating && (millis() - previousMillisVibration >= SECOND)) {
+    // Stop the motor
+    analogWrite(MOT_PIN, 0);
+    isVibrating = false; // Indicate that vibration has stopped
+     Serial.println("Stopped");
+  }
+}
+
 void checkIdleTime(){
       
       
@@ -994,6 +1016,7 @@ void readScreenGesture(){
       // advance the screen
       prevScreen = screen;
       screen++;
+      startVibration();
       
     }
     if(gest == "SWIPE RIGHT"){
@@ -1049,6 +1072,7 @@ void setup() {
   bool status;
   pinMode(button1, INPUT_PULLUP); // config GPIO21 as input pin and enable the internal pull-up resistor
   pinMode(button2, INPUT_PULLUP);
+  pinMode(MOT_PIN, OUTPUT);
 
   Serial.begin(115200);
   randomSeed(analogRead(0));
