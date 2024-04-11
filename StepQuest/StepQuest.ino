@@ -208,8 +208,12 @@ void loop1(void *pvParameters) {
       }
       else
       {
-        setupDungeon(p.level, p.location, &D);
-        p.currStatus = INDUNGEON;
+        if(!D.defeated)
+        {
+          setupDungeon(p.level, p.location, &D);
+          p.currStatus = INDUNGEON;          
+        }
+
       }
     }
 
